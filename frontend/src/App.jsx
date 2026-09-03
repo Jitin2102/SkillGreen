@@ -350,16 +350,12 @@ export default function App() {
                 </section>
             </main>
 
-            <footer className="border-t border-black/[0.1] bg-white/80 backdrop-blur-md">
-                <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-5 sm:py-8 text-xs sm:text-sm text-ink/85 flex flex-col sm:flex-row sm:justify-between items-center sm:items-start text-center sm:text-left gap-3 sm:gap-6 font-sans">
-                    <div className="whitespace-nowrap font-semibold tracking-wide">
-                        © 2026 SkillGreen. All rights reserved.
-                    </div>
-                    <div className="max-w-md sm:text-right leading-relaxed break-words font-medium text-ink/75">
-                        Advancing sustainable workforce development through verified Environmental, Social, and Governance (ESG) analytics.
-                    </div>
+            <footer className="border-t border-black/[0.07]">
+                <div className="max-w-6xl mx-auto px-6 md:px-12 py-6 text-xs text-ink/40">
+                    Trained on a synthetically labeled dataset. A proof-of-concept pipeline, not a validated real-world predictor.
                 </div>
             </footer>
+
         </div>
     );
 }
