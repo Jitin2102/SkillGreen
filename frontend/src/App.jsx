@@ -10,7 +10,7 @@ import {
     Loader2,
 } from "lucide-react";
 
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://skillgreen.onrender.com";
 
 const PILLAR_META = {
     environmental: {
@@ -47,15 +47,15 @@ function PillarBar({ label, value }) {
     const pct = Math.min(100, Math.max(4, value * 3));
     const Icon = meta.icon;
     return (
-        <div className="mb-5">
-            <div className="flex justify-between items-baseline mb-2">
-                <span className="flex items-center gap-2 text-sm font-medium text-ink">
-                    <Icon size={15} className={meta.iconColor} strokeWidth={2.25} />
-                    {label}
+        <div className="mb-4 sm:mb-5 w-full">
+            <div className="flex justify-between items-baseline mb-1.5 sm:mb-2">
+                <span className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs md:text-sm font-medium text-ink">
+                    <Icon size={14} className={`shrink-0 ${meta.iconColor}`} strokeWidth={2.25} />
+                    <span className="truncate">{label}</span>
                 </span>
-                <span className="text-sm tabular-nums text-ink/50">{value}</span>
+                <span className="text-[11px] sm:text-xs md:text-sm font-semibold tabular-nums text-ink/80 ml-2">{value}</span>
             </div>
-            <div className="h-2 w-full bg-black/[0.07] overflow-hidden">
+            <div className="h-1.5 sm:h-2 w-full bg-black/[0.07] overflow-hidden rounded-full">
                 <div
                     className={`h-full ${meta.bar} transition-all duration-700 ease-out`}
                     style={{ width: `${pct}%` }}
@@ -67,9 +67,9 @@ function PillarBar({ label, value }) {
 
 function FormField({ label, children, icon: Icon }) {
     return (
-        <label className="block mb-5">
-            <span className="flex items-center gap-1.5 text-[13px] font-semibold uppercase tracking-wide mb-2 text-ink/55">
-                {Icon && <Icon size={13} strokeWidth={2.25} />}
+        <label className="block mb-4 sm:mb-5 w-full">
+            <span className="flex items-center gap-1.5 text-[10px] sm:text-xs md:text-[13px] font-bold uppercase tracking-wider mb-1.5 sm:mb-2 text-ink/70 break-words">
+                {Icon && <Icon size={13} className="shrink-0" strokeWidth={2.25} />}
                 {label}
             </span>
             {children}
@@ -78,12 +78,12 @@ function FormField({ label, children, icon: Icon }) {
 }
 
 const inputClasses =
-    "w-full rounded-[4px] border border-black/12 bg-white px-3.5 py-2.5 text-sm shadow-sm " +
+    "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base shadow-sm " +
     "transition-shadow focus:outline-none focus:ring-2 focus:ring-[var(--color-ochre)]/40 focus:border-[var(--color-ochre)]";
 
 const checkboxRow =
-    "flex items-center gap-3 mb-2.5 text-sm rounded-[4px] border border-transparent px-2 py-1.5 -mx-2 " +
-    "hover:bg-black/[0.03] transition-colors cursor-pointer";
+    "flex items-start sm:items-center gap-2.5 sm:gap-3 mb-2.5 text-xs sm:text-sm md:text-base rounded-md border border-transparent px-2 py-1.5 -mx-2 " +
+    "hover:bg-black/[0.03] transition-colors cursor-pointer w-full";
 
 export default function App() {
     const [options, setOptions] = useState({ industries: [], education_levels: [] });
@@ -146,51 +146,48 @@ export default function App() {
     const tone = result ? CATEGORY_TONE[result.predicted_category] : null;
 
     return (
-        <div className="min-h-screen text-ink relative">
-            {/* Ambient animated background — sits behind all content */}
+        <div className="min-h-screen text-ink relative font-sans overflow-x-hidden">
             <div className="bg-aurora">
                 <div className="blob-3" />
             </div>
 
-            {/* Header */}
             <header className="border-b border-black/[0.09]">
-                <div className="max-w-6xl mx-auto px-6 md:px-12 py-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-[var(--color-ink)] flex items-center justify-center">
-                            <span className="font-[var(--font-display)] text-[var(--color-parchment)] text-base">S</span>
+                <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-3 sm:py-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                        <div className="h-7 w-7 sm:h-8 sm:w-8 bg-[var(--color-ink)] flex items-center justify-center rounded-sm shrink-0">
+                            <span className="font-serif text-[var(--color-parchment)] text-sm sm:text-base font-bold">S</span>
                         </div>
-                        <div>
-                            <h1 className="text-[15px] font-semibold tracking-tight leading-none">SkillGreen</h1>
-                            <p className="text-[11px] text-ink/45 mt-1 tracking-wide uppercase">ESG Readiness Index</p>
+                        <div className="min-w-0">
+                            <h1 className="text-[13px] sm:text-base font-bold tracking-tight leading-none truncate">SkillGreen</h1>
+                            <p className="text-[9px] sm:text-xs text-ink/60 mt-0.5 sm:mt-1 tracking-widest uppercase font-medium truncate">ESG Readiness Index</p>
                         </div>
                     </div>
-                    <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-ink/50 border border-black/12 px-2.5 py-1 tracking-wide uppercase">
-                        <span className="h-1.5 w-1.5 bg-[var(--color-environmental)]" />
+                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-ink/60 border border-black/12 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full tracking-wider uppercase whitespace-nowrap">
+                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--color-environmental)] shrink-0" />
                         Model v1.1
                     </span>
                 </div>
             </header>
 
-            {/* Hero strip */}
-            <div className="max-w-6xl mx-auto px-6 md:px-12 pt-10 pb-8">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-ochre-dark)] mb-3">
+            <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pt-6 sm:pt-12 pb-5 sm:pb-10">
+                <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-ochre-dark)] mb-2 sm:mb-4">
                     Readiness assessment
                 </p>
-                <h2 className="font-[var(--font-display)] text-[28px] md:text-[34px] leading-[1.15] max-w-xl mb-3">
+                <h2 className="font-serif text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.15] sm:leading-[1.1] max-w-2xl mb-3 sm:mb-5 break-words">
                     ESG career readiness assessment
                 </h2>
-                <p className="text-ink/55 max-w-lg leading-relaxed text-[15px]">
+                <p className="text-ink/60 max-w-xl leading-relaxed text-xs sm:text-base lg:text-lg font-medium break-words">
                     Enter a professional profile to generate a readiness score across the
                     Environmental, Social, and Governance dimensions, with a recommended
                     area of focus.
                 </p>
             </div>
 
-            <main className="max-w-6xl mx-auto px-6 md:px-12 pb-16 grid lg:grid-cols-5 gap-8">
-                {/* Left: form card */}
-                <section className="lg:col-span-3 bg-[var(--color-card)] rounded-[6px] border border-black/[0.09] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6 md:p-8">
-                    <form onSubmit={handleSubmit}>
-                        <div className="grid sm:grid-cols-2 gap-x-5">
+            <main className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pb-12 sm:pb-16 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 2xl:gap-12">
+
+                <section className="col-span-1 lg:col-span-7 xl:col-span-8 bg-[var(--color-card)] rounded-xl border border-black/[0.09] shadow-sm p-4 sm:p-6 md:p-8 w-full">
+                    <form onSubmit={handleSubmit} className="w-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-1 sm:gap-y-2 w-full">
                             <FormField label="Years of experience">
                                 <input
                                     type="number"
@@ -237,13 +234,13 @@ export default function App() {
                             </FormField>
                         </div>
 
-                        <div className="h-px bg-black/[0.06] my-6" />
+                        <div className="h-px w-full bg-black/[0.06] my-5 sm:my-8" />
 
-                        <fieldset className="mb-7">
-                            <legend className="text-[13px] font-semibold uppercase tracking-wide mb-3 text-ink/55">
+                        <fieldset className="mb-6 sm:mb-8 w-full">
+                            <legend className="text-[10px] sm:text-[13px] font-bold uppercase tracking-wider mb-3 sm:mb-4 text-ink/70">
                                 Background
                             </legend>
-                            <div className="grid sm:grid-cols-2 gap-x-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 sm:gap-y-1 w-full">
                                 {[
                                     ["has_esg_certification", "Holds an ESG certification", BadgeCheck],
                                     ["environmental_project_exposure", "Environmental project exposure", Leaf],
@@ -255,10 +252,10 @@ export default function App() {
                                             type="checkbox"
                                             checked={form[key]}
                                             onChange={(e) => updateField(key, e.target.checked)}
-                                            className="h-4 w-4 rounded accent-[var(--color-ochre)]"
+                                            className="h-4 w-4 md:h-5 md:w-5 shrink-0 rounded border-gray-300 text-[var(--color-ochre)] focus:ring-[var(--color-ochre)] mt-0.5 sm:mt-0"
                                         />
-                                        <Icon size={15} className="text-ink/40" strokeWidth={2} />
-                                        {label}
+                                        <Icon size={16} className="text-ink/40 shrink-0 mt-0.5 sm:mt-0" strokeWidth={2} />
+                                        <span className="leading-tight">{label}</span>
                                     </label>
                                 ))}
                             </div>
@@ -267,81 +264,82 @@ export default function App() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full rounded-[4px] bg-[var(--color-ink)] text-[var(--color-parchment)] py-3 text-sm font-semibold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200 disabled:opacity-50"
+                            className="w-full rounded-md bg-[var(--color-ink)] text-[var(--color-parchment)] py-2.5 sm:py-3.5 text-xs sm:text-base font-bold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200 disabled:opacity-50"
                         >
                             <span className="inline-flex items-center justify-center gap-2">
                                 {loading ? (
                                     <>
-                                        <Loader2 size={16} className="animate-spin" />
+                                        <Loader2 size={16} className="animate-spin sm:h-[18px] sm:w-[18px]" />
                                         Calculating
                                     </>
                                 ) : (
                                     <>
                                         Run assessment
-                                        <ArrowRight size={16} />
+                                        <ArrowRight size={16} className="sm:h-[18px] sm:w-[18px]" />
                                     </>
                                 )}
                             </span>
                         </button>
 
                         {error && (
-                            <p className="mt-3 text-sm text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-[4px] px-3 py-2">
+                            <p className="mt-3 sm:mt-4 text-xs sm:text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-3 py-2 sm:px-4 sm:py-3 break-words">
                                 {error}
                             </p>
                         )}
                     </form>
                 </section>
 
-                {/* Right: result panel */}
-                <section className="lg:col-span-2">
-                    <div className="sticky top-8 bg-[var(--color-card)] rounded-[6px] border border-black/[0.09] shadow-[0_1px_2px_rgba(0,0,0,0.04)] p-6 md:p-7 min-h-[420px] flex flex-col">
+                <section className="col-span-1 lg:col-span-5 xl:col-span-4 w-full">
+                    <div className="lg:sticky lg:top-8 bg-[var(--color-card)] rounded-xl border border-black/[0.09] shadow-sm p-4 sm:p-6 md:p-8 min-h-[280px] sm:min-h-[420px] flex flex-col w-full">
                         {!result ? (
-                            <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
-                                <div className="h-14 w-14 border-2 border-dashed border-black/15 mb-4 flex items-center justify-center">
-                                    <span className="text-black/20 text-xl font-[var(--font-display)]">?</span>
+                            <div className="flex-1 flex flex-col items-center justify-center text-center py-8 lg:py-16">
+                                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-dashed border-black/15 mb-3 sm:mb-5 flex items-center justify-center bg-black/[0.02]">
+                                    <span className="text-black/20 text-xl sm:text-2xl font-serif">?</span>
                                 </div>
-                                <p className="text-sm text-ink/40 max-w-[24ch]">
+                                <p className="text-xs sm:text-base font-medium text-ink/50 max-w-[20ch] leading-snug sm:leading-normal">
                                     Run an assessment to see the readiness rating.
                                 </p>
                             </div>
                         ) : (
                             <>
-                                <div className="flex items-start justify-between mb-6 pb-6 border-b border-black/[0.08]">
-                                    <div>
-                                        <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40 mb-2">
+                                <div className="flex items-start justify-between mb-5 sm:mb-8 pb-5 sm:pb-8 border-b border-black/[0.08] w-full">
+                                    <div className="min-w-0 pr-2">
+                                        <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-ink/75 mb-1.5 sm:mb-3 truncate">
                                             Readiness rating
                                         </p>
-                                        <div className={`inline-flex items-center justify-center h-14 w-14 border-2 ${tone.text} border-current`}>
-                                            <span className="font-[var(--font-display)] text-2xl font-medium">
+                                        <div className={`inline-flex items-center justify-center h-12 w-12 sm:h-20 sm:w-20 rounded-lg border-2 ${tone.text} border-current bg-white shadow-sm shrink-0`}>
+                                            <span className="font-serif text-2xl sm:text-4xl font-bold">
                                                 {result.predicted_category[0]}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40 mb-2">
+                                    <div className="text-right min-w-0 pl-2">
+                                        <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-ink/75 mb-1.5 sm:mb-3 truncate">
                                             Category
                                         </p>
-                                        <p className={`text-lg font-semibold ${tone.text}`}>{result.predicted_category}</p>
-                                        <p className="text-[11px] text-ink/40 mt-1 tabular-nums">
+                                        <p className={`text-base sm:text-2xl font-bold ${tone.text} truncate`}>{result.predicted_category}</p>
+                                        <p className="text-[10px] sm:text-sm font-semibold text-ink/80 mt-1 sm:mt-1.5 tabular-nums bg-black/[0.06] border border-black/5 inline-block px-2 sm:px-2.5 py-1 sm:py-1.5 rounded truncate max-w-full">
                                             {Math.round(result.confidence * 100)}% confidence
                                         </p>
                                     </div>
                                 </div>
 
-                                <p className="text-[11px] font-semibold uppercase tracking-widest text-ink/40 mb-4">
+                                <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-ink/75 mb-3 sm:mb-5 truncate">
                                     Pillar breakdown
                                 </p>
-                                {Object.entries(result.pillar_breakdown).map(([key, value]) => (
-                                    <PillarBar
-                                        key={key}
-                                        label={PILLAR_META[key].label}
-                                        value={value}
-                                    />
-                                ))}
+                                <div className="w-full">
+                                    {Object.entries(result.pillar_breakdown).map(([key, value]) => (
+                                        <PillarBar
+                                            key={key}
+                                            label={PILLAR_META[key].label}
+                                            value={value}
+                                        />
+                                    ))}
+                                </div>
 
-                                <div className="mt-auto pt-5 rounded-[4px] bg-[var(--color-parchment-dim)] border border-black/[0.08] px-4 py-3.5 text-sm leading-relaxed">
-                                    <span className="font-semibold">Focus area — </span>
-                                    <span className="text-ink/75">
+                                <div className="mt-4 sm:mt-auto pt-4 sm:pt-5 rounded-lg bg-[var(--color-parchment-dim)] border border-black/[0.08] px-3 sm:px-5 py-3 sm:py-5 text-xs sm:text-base leading-relaxed break-words w-full">
+                                    <span className="font-bold text-ink">Focus area — </span>
+                                    <span className="text-ink/80 font-medium">
                                         {PILLAR_META[result.weakest_pillar]?.label ?? result.weakest_pillar} is your
                                         weakest pillar right now. That's the fastest lever to move up a category.
                                     </span>
@@ -352,9 +350,14 @@ export default function App() {
                 </section>
             </main>
 
-            <footer className="border-t border-black/[0.07]">
-                <div className="max-w-6xl mx-auto px-6 md:px-12 py-6 text-xs text-ink/40">
-                    Trained on a synthetically labeled dataset. A proof-of-concept pipeline, not a validated real-world predictor.
+            <footer className="border-t border-black/[0.1] bg-white/80 backdrop-blur-md">
+                <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-5 sm:py-8 text-xs sm:text-sm text-ink/85 flex flex-col sm:flex-row sm:justify-between items-center sm:items-start text-center sm:text-left gap-3 sm:gap-6 font-sans">
+                    <div className="whitespace-nowrap font-semibold tracking-wide">
+                        © 2026 SkillGreen. All rights reserved.
+                    </div>
+                    <div className="max-w-md sm:text-right leading-relaxed break-words font-medium text-ink/75">
+                        Advancing sustainable workforce development through verified Environmental, Social, and Governance (ESG) analytics.
+                    </div>
                 </div>
             </footer>
         </div>
