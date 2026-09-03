@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", sans-serif;
+
+  --color-ink: #1b2a1e;
+  --color-parchment: #f6f4ec;
+  --color-parchment-dim: #ece8dc;
+  --color-card: #fffdf7;
+  --color-ochre: #b8892b;
+  --color-ochre-dark: #96701f;
+  --color-ochre-light: #f2e3c6;
+  --color-environmental: #3f6b4f;
+  --color-environmental-light: #e3ecdf;
+  --color-social: #4a6fa5;
+  --color-social-light: #e2e9f3;
+  --color-governance: #7a5c8e;
+  --color-governance-light: #ece4f1;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-parchment);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Static dot-grid texture, sits above the animated blobs */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(circle at 1px 1px, rgba(27, 42, 30, 0.06) 1px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Slow-drifting soft gradient blobs, behind everything.
+   Subtle and slow on purpose — this is an ESG/analytical tool,
+   not a consumer landing page, so the motion should read as
+   ambient, not decorative. */
+.bg-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-aurora::before,
+.bg-aurora::after,
+.bg-aurora .blob-3 {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.35;
+  will-change: transform;
+}
+
+.bg-aurora::before {
+  width: 34rem;
+  height: 34rem;
+  top: -12rem;
+  left: -8rem;
+  background: radial-gradient(circle, var(--color-environmental) 0%, transparent 70%);
+  animation: drift-a 34s ease-in-out infinite;
+}
+
+.bg-aurora::after {
+  width: 30rem;
+  height: 30rem;
+  bottom: -10rem;
+  right: -6rem;
+  background: radial-gradient(circle, var(--color-ochre) 0%, transparent 70%);
+  animation: drift-b 28s ease-in-out infinite;
+}
+
+.bg-aurora .blob-3 {
+  width: 26rem;
+  height: 26rem;
+  top: 30%;
+  left: 55%;
+  background: radial-gradient(circle, var(--color-social) 0%, transparent 70%);
+  animation: drift-c 40s ease-in-out infinite;
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4rem, 3rem) scale(1.08); }
+  66% { transform: translate(-2rem, 5rem) scale(0.96); }
+}
+
+@keyframes drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-3rem, -4rem) scale(1.1); }
+  66% { transform: translate(2rem, -2rem) scale(0.94); }
+}
+
+@keyframes drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-5rem, 3rem) scale(1.12); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-aurora::before,
+  .bg-aurora::after,
+  .bg-aurora .blob-3 {
+    animation: none;
+  }
+}
+
+::selection {
+  background-color: var(--color-ochre-light);
+}
+
+input[type="number"],
+select {
+  color-scheme: light;
+}
+
+input[type="checkbox"] {
+  cursor: pointer;
+}

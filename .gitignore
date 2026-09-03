@@ -1,0 +1,22 @@
+
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+myenv/
+venv/
+.pytest_cache/
+*.egg-info/
+.env
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+.DS_Store
+.vscode/
+*.log
+
+#  Data / model
+model/model.pkl
+data/skillgreen.csv
