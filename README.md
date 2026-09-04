@@ -1,10 +1,15 @@
 # SkillGreen
 
-### ESG Career Readiness Assessment Platform
+**ESG Career Readiness Assessment Platform**
 
-> An end-to-end machine learning application for assessing professional ESG career readiness across Environmental, Social, and Governance dimensions.
+An end-to-end machine learning application for assessing professional ESG career readiness across Environmental, Social, and Governance dimensions.
 
 SkillGreen evaluates structured professional profiles and generates an ESG readiness assessment using machine learning, feature engineering, and an API-driven full-stack architecture.
+
+**Live Demo:** [skill-green.vercel.app](https://skill-green.vercel.app)
+**API:** [skillgreen.onrender.com](https://skillgreen.onrender.com) · [Interactive docs](https://skillgreen.onrender.com/docs)
+
+> The backend runs on a free-tier instance and may take up to 50 seconds to respond on the first request after a period of inactivity.
 
 ---
 
@@ -12,41 +17,26 @@ SkillGreen evaluates structured professional profiles and generates an ESG readi
 
 SkillGreen is an end-to-end machine learning application designed to assess how prepared a professional may be for ESG and sustainability-oriented career opportunities.
 
-Instead of relying exclusively on resume keyword matching, the system analyzes structured professional attributes including:
-
-* Industry
-* Education
-* Professional experience
-* ESG certifications
-* Environmental exposure
-* Social exposure
-* Governance exposure
+Instead of relying exclusively on resume keyword matching, the system analyzes structured professional attributes including industry, education, professional experience, and exposure to Environmental, Social, and Governance work.
 
 These attributes are transformed into an ESG profile containing:
 
-| Output              | Description                             |
-| ------------------- | --------------------------------------- |
-| ESG Readiness       | Low / Medium / High                     |
-| Confidence          | Model confidence for the prediction     |
-| Environmental Score | Environmental capability indicator      |
-| Social Score        | Social capability indicator             |
-| Governance Score    | Governance capability indicator         |
-| Improvement Areas   | Potential areas for further development |
+| Output | Description |
+|---|---|
+| ESG Readiness | Low / Medium / High |
+| Confidence | Model confidence for the prediction |
+| Environmental Score | Environmental capability indicator |
+| Social Score | Social capability indicator |
+| Governance Score | Governance capability indicator |
+| Weakest Pillar | The single ESG dimension to prioritize next |
 
-The project combines **synthetic data generation, exploratory data analysis, feature engineering, supervised machine learning, FastAPI, Pydantic, React, and automated testing** into a complete ML application.
+The project combines synthetic data generation, exploratory data analysis, feature engineering, supervised machine learning, FastAPI, Pydantic, React, and automated testing into a complete ML application.
 
 ---
 
 ## Problem Statement
 
-The growing adoption of ESG practices is creating demand for professionals with sustainability-related capabilities.
-
-However, professionals often lack a structured way to determine:
-
-* How their existing experience translates to ESG-oriented roles
-* Which ESG dimension represents their strongest capability
-* Where their primary ESG skill gaps exist
-* How prepared they are for an ESG career transition
+The growing adoption of ESG practices is creating demand for professionals with sustainability-related capabilities. However, professionals often lack a structured way to determine how their existing experience translates to ESG-oriented roles, which ESG dimension represents their strongest capability, where their primary skill gaps exist, and how prepared they are for a career transition.
 
 Recruiters face a related challenge. Traditional resume screening frequently relies on keyword matching, which can overlook relevant ESG capabilities developed through adjacent industries and professional responsibilities.
 
@@ -56,7 +46,7 @@ SkillGreen explores a structured approach to identifying and quantifying these t
 
 ---
 
-## Proposed Approach
+## Approach
 
 ```text
 Professional Profile
@@ -104,61 +94,28 @@ The system converts structured professional information into ESG pillar scores a
 
 ## Data Strategy
 
-A suitable public dataset containing individual-level ESG career-readiness outcomes was not available for this project.
+A suitable public dataset containing individual-level ESG career-readiness outcomes was not available for this project. SkillGreen therefore uses a transparent synthetic-data generation methodology, based on documented scoring rules and controlled randomness, grounded in the standard Environmental / Social / Governance framework.
 
-Therefore, SkillGreen uses a **transparent synthetic-data generation methodology** based on documented scoring rules and controlled randomness.
+**Dataset characteristics:**
 
-The dataset represents professional profiles across:
+- 8,000 synthetic professional profiles
+- Multiple education levels and industries
+- Varied experience levels
+- ESG certification status
+- Environmental, Social, and Governance exposure flags
+- ESG readiness labels
 
-* **Environmental**
-* **Social**
-* **Governance**
-
-### Dataset Characteristics
-
-* **8,000 synthetic professional profiles**
-* Multiple education levels
-* Multiple industries
-* Different experience levels
-* ESG certifications
-* Environmental exposure
-* Social exposure
-* Governance exposure
-* ESG readiness labels
-
-The generated data intentionally incorporates non-uniform distributions to represent heterogeneous professional profiles.
-
-Examples include:
-
-* Bachelor's degrees being more common than PhDs
-* ESG certifications being relatively uncommon
-* ESG exposure varying across industries and experience levels
+The generated data intentionally incorporates non-uniform distributions to represent heterogeneous professional profiles — for example, Bachelor's degrees are more common than PhDs, ESG certifications are relatively uncommon, and ESG exposure varies across industries and experience levels.
 
 ---
 
 ## Exploratory Data Analysis
 
-EDA was performed to understand the generated dataset and identify characteristics relevant to model development.
+**Class distribution.** The Low readiness category represents approximately 15% of the dataset. Class-aware modelling considerations were used during training to reduce potential bias toward majority classes.
 
-### Class Distribution
+**ESG dimensions.** The engineered Environmental, Social, and Governance scores provide stronger separation between readiness categories than any individual raw attribute — supporting the underlying design assumption that ESG career readiness is a multidimensional capability rather than a single raw attribute.
 
-The **Low readiness** category represents approximately 15% of the dataset.
-
-Class-aware modelling considerations were therefore used to reduce potential bias toward majority classes.
-
-### ESG Dimensions
-
-The engineered Environmental, Social, and Governance scores provide stronger separation between readiness categories than individual raw attributes.
-
-This supports the underlying design assumption:
-
-> **ESG career readiness is a multidimensional capability rather than a single raw attribute.**
-
-### Controlled Label Noise
-
-Approximately **5% controlled label noise** was introduced during dataset generation.
-
-Without noise, the model could potentially learn the deterministic scoring mechanism rather than solving a meaningful classification problem.
+**Controlled label noise.** Approximately 5% controlled label noise was introduced during dataset generation. Without noise, the model could learn the deterministic scoring formula directly rather than solving a meaningful classification problem.
 
 ---
 
@@ -166,44 +123,33 @@ Without noise, the model could potentially learn the deterministic scoring mecha
 
 SkillGreen evaluates multiple classification algorithms rather than selecting a model arbitrarily.
 
-### Models Evaluated
+| Model | Role |
+|---|---|
+| Logistic Regression | Linear baseline |
+| Decision Tree | Interpretable nonlinear baseline |
+| Random Forest | Ensemble baseline |
+| Gradient Boosting | Nonlinear ensemble model |
 
-| Model               | Role                             |
-| ------------------- | -------------------------------- |
-| Logistic Regression | Linear baseline                  |
-| Decision Tree       | Interpretable nonlinear baseline |
-| Random Forest       | Ensemble baseline                |
-| Gradient Boosting   | Nonlinear ensemble model         |
+Models were evaluated using 5-fold cross-validation with F1-macro as the primary comparison metric, selected because it provides balanced evaluation across classes in the presence of class imbalance.
 
-The models were evaluated using **5-fold cross-validation** with **F1-macro** as the primary comparison metric.
+### Selected Model & Results
 
-F1-macro was selected because it provides balanced evaluation across classes in the presence of class imbalance.
+**Gradient Boosting** achieved the strongest overall performance and was selected for the final prediction pipeline.
 
----
+| Metric | Result |
+|---|---:|
+| Test Accuracy | **94.75%** |
+| Test F1-Macro | **0.935** |
+| Cross-Validation | 5-fold |
+| Dataset | Synthetic |
 
-## Model Selection & Results
-
-Gradient Boosting achieved the strongest overall performance and was selected for the final prediction pipeline.
-
-### Evaluation Results
-
-| Metric           |                Result |
-| ---------------- | --------------------: |
-| Test Accuracy    |            **94.75%** |
-| Test F1-Macro    |             **0.935** |
-| Cross-Validation |            **5-fold** |
-| Selected Model   | **Gradient Boosting** |
-| Dataset          |         **Synthetic** |
-
-> **Important:** These metrics measure performance against synthetically generated labels based on the project's scoring framework. They should not be interpreted as real-world hiring prediction accuracy.
+> **Important:** these metrics measure performance against synthetically generated labels based on the project's scoring framework. They should not be interpreted as real-world hiring prediction accuracy.
 
 ---
 
 ## Feature Engineering
 
-Feature engineering is a central component of SkillGreen.
-
-Rather than passing only raw professional attributes to the model, the application derives structured ESG features representing the three ESG dimensions.
+Rather than passing only raw professional attributes to the model, the application derives structured ESG features representing the three ESG dimensions. This logic is implemented using Pydantic's `computed_field`, so the exact same feature calculation runs both at training time and on live API requests — eliminating the risk of drift between how the model was trained and how it's actually used.
 
 ```text
 Professional Attributes
@@ -225,20 +171,16 @@ Professional Attributes
        ML Classification
 ```
 
-The feature-engineering logic uses Pydantic `computed_field` to calculate the pillar-level scores from validated user inputs.
-
 ---
 
 ## System Architecture
-
-SkillGreen follows a modular full-stack machine learning architecture.
 
 ```text
 ┌─────────────────────────┐
 │      React Frontend     │
 │          Vite           │
 └────────────┬────────────┘
-             │ HTTP
+             │ HTTPS
              ▼
 ┌─────────────────────────┐
 │     FastAPI Backend     │
@@ -264,35 +206,17 @@ SkillGreen follows a modular full-stack machine learning architecture.
 └─────────────────────────┘
 ```
 
+**Deployment:** FastAPI backend on Render · React frontend on Vercel.
+
 ---
 
 ## Technology Stack
 
-### Backend
+**Backend** — Python, FastAPI, Pydantic, pytest
 
-* Python
-* FastAPI
-* Pydantic
-* pytest
+**Data Science & Machine Learning** — NumPy, pandas, scikit-learn, synthetic data generation, exploratory data analysis, feature engineering, cross-validation, model evaluation
 
-### Data Science & Machine Learning
-
-* NumPy
-* pandas
-* scikit-learn
-* Synthetic data generation
-* Exploratory data analysis
-* Feature engineering
-* Classification
-* Cross-validation
-* Model evaluation
-
-### Frontend
-
-* React
-* Vite
-* lucide-react
-* CSS
+**Frontend** — React, Vite, lucide-react, CSS
 
 ---
 
@@ -300,7 +224,6 @@ SkillGreen follows a modular full-stack machine learning architecture.
 
 ```text
 SkillGreen/
-│
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
@@ -334,7 +257,6 @@ SkillGreen/
     ├── package-lock.json
     ├── vite.config.js
     ├── index.html
-    │
     └── src/
         ├── main.jsx
         ├── App.jsx
@@ -345,30 +267,28 @@ SkillGreen/
 
 ## Installation
 
-### Clone the Repository
+**Clone the repository**
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/Jitin2102/SkillGreen.git
 cd SkillGreen
 ```
 
-### Create a Virtual Environment
+**Create a virtual environment**
 
-#### Windows
-
+Windows:
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-#### Linux / macOS
-
+Linux / macOS:
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-### Install Dependencies
+**Install dependencies**
 
 ```bash
 pip install -r requirements.txt
@@ -376,29 +296,17 @@ pip install -r requirements.txt
 
 ---
 
-## Running the Application
+## Running Locally
 
-### Start the Backend
+**Start the backend**
 
 ```bash
 uvicorn app:app --reload
 ```
 
-The API will be available at:
+API available at `http://127.0.0.1:8000`, interactive docs at `http://127.0.0.1:8000/docs`.
 
-```text
-http://127.0.0.1:8000
-```
-
-Interactive API documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-### Start the Frontend
-
-Open a separate terminal:
+**Start the frontend** (in a separate terminal)
 
 ```bash
 cd frontend
@@ -406,30 +314,17 @@ npm install
 npm run dev
 ```
 
-The Vite development server will provide the frontend URL.
-
-The frontend communicates with the FastAPI backend through HTTP requests.
+Vite will print the local development URL. The frontend communicates with the FastAPI backend over HTTP — update `API_BASE` in `frontend/src/App.jsx` if you're pointing at a different backend location.
 
 ---
 
 ## Testing
 
-SkillGreen includes automated backend testing using `pytest`.
-
-Run:
-
 ```bash
 pytest
 ```
 
-The current test suite contains **11 automated tests** covering:
-
-* Valid API requests
-* Invalid input handling
-* Pydantic validation
-* Prediction responses
-* API behaviour
-* ML model integration
+The test suite contains 11 automated tests covering valid API requests, invalid input handling, Pydantic validation, prediction responses, and model integration.
 
 **Current status: 11 / 11 tests passing.**
 
@@ -437,55 +332,12 @@ The current test suite contains **11 automated tests** covering:
 
 ## End-to-End Workflow
 
-A prediction request follows this sequence:
-
-### Profile Input
-
-The user provides:
-
-```text
-Industry
-Education
-Years of Experience
-ESG Certification
-Environmental Exposure
-Social Exposure
-Governance Exposure
-```
-
-### Input Validation
-
-Pydantic validates the request and rejects invalid or out-of-range values.
-
-### Feature Engineering
-
-Environmental, Social, and Governance features are calculated.
-
-### Model Inference
-
-The processed features are passed to the trained Gradient Boosting model.
-
-### Classification
-
-The model returns one of three readiness categories:
-
-```text
-Low
-Medium
-High
-```
-
-### Response
-
-The frontend presents the resulting ESG readiness profile:
-
-```text
-ESG Readiness
-├── Environmental Score
-├── Social Score
-├── Governance Score
-└── Confidence
-```
+1. **Profile input** — industry, education, years of experience, ESG certification, and Environmental / Social / Governance exposure
+2. **Input validation** — Pydantic rejects invalid or out-of-range values before anything else runs
+3. **Feature engineering** — Environmental, Social, and Governance scores are computed via `computed_field`
+4. **Model inference** — the trained Gradient Boosting pipeline scores the processed features
+5. **Classification** — the model returns Low, Medium, or High
+6. **Response** — the frontend presents the full readiness profile: category, confidence, pillar breakdown, and weakest pillar
 
 ---
 
@@ -493,238 +345,105 @@ ESG Readiness
 
 ```json
 {
-  "readiness_category": "High",
-  "confidence": 0.94,
-  "environmental_score": 82,
-  "social_score": 76,
-  "governance_score": 88
+  "predicted_category": "High",
+  "confidence": 0.961,
+  "pillar_breakdown": {
+    "environmental": 22,
+    "social": 0,
+    "governance": 10
+  },
+  "weakest_pillar": "social"
 }
 ```
 
-The response model is defined in:
-
-```text
-schema/response_model.py
-```
+Response schema defined in `schema/response_model.py`.
 
 ---
 
 ## Validation
 
-The prototype has been validated across the major application layers.
-
-| Layer       | Validation                             |
-| ----------- | -------------------------------------- |
-| Data        | 8,000 profiles generated and inspected |
-| ML          | 4 classification models compared       |
-| Evaluation  | 5-fold cross-validation                |
-| Model       | Gradient Boosting selected             |
-| Backend     | FastAPI and Pydantic tested            |
-| Integration | ML model integrated with API           |
-| Frontend    | React + Vite interface implemented     |
-| API         | Backend communication verified         |
-| Testing     | 11 / 11 automated tests passing        |
+| Layer | Validation |
+|---|---|
+| Data | 8,000 profiles generated and inspected |
+| ML | 4 classification models compared via cross-validation |
+| Model | Gradient Boosting selected on F1-macro |
+| Backend | FastAPI and Pydantic tested end-to-end |
+| Integration | ML model integrated with API, verified with real inputs |
+| Frontend | React + Vite interface implemented and tested live |
+| Testing | 11 / 11 automated tests passing |
+| Deployment | Backend live on Render, frontend live on Vercel |
 
 ---
 
 ## Intended Use Cases
 
-### Professionals
+**Professionals** can use SkillGreen to understand their current ESG readiness, identify their strongest ESG dimension, spot potential skill gaps, and assess how their existing experience might transfer toward ESG-oriented roles.
 
-SkillGreen can provide structured insight into:
+**Recruiters and hiring teams** can use it for initial candidate screening, structured candidate comparison, and identifying transferable ESG capabilities beyond simple keyword matching.
 
-* Current ESG readiness
-* Strongest ESG dimension
-* Potential skill gaps
-* Upskilling opportunities
-* Transferability of existing professional experience
-
-### Recruiters and Hiring Teams
-
-Potential applications include:
-
-* Initial candidate screening
-* Structured candidate comparison
-* Identifying transferable ESG capabilities
-* Reducing dependence on simple keyword matching
-
-> SkillGreen is intended as a **decision-support system**, not an automated employment decision-maker.
+> SkillGreen is intended as a decision-support system, not an automated employment decision-maker.
 
 ---
 
 ## Limitations
 
-The current system has an important methodological limitation: **the training data is synthetic**.
-
-The model does not currently learn from actual hiring outcomes or professionally validated ESG assessments.
+The current system has an important methodological limitation: **the training data is synthetic**. The model does not currently learn from actual hiring outcomes or professionally validated ESG assessments.
 
 Consequently:
 
-* The 94.75% accuracy should not be interpreted as real-world hiring accuracy.
-* The labels reflect the project's defined ESG scoring framework.
-* Synthetic data cannot fully represent the complexity of real professional careers.
-* The current system has not been validated against real career-transition outcomes.
-* Predictions should not be used as the sole basis for recruitment or employment decisions.
+- The 94.75% accuracy should not be interpreted as real-world hiring accuracy
+- Labels reflect the project's defined ESG scoring framework, not observed outcomes
+- Synthetic data cannot fully represent the complexity of real professional careers
+- The system has not been validated against real career-transition outcomes
+- Predictions should not be used as the sole basis for recruitment or employment decisions
 
-These limitations are explicitly documented to maintain transparency around the current scope of the system.
+These limitations are documented explicitly to maintain transparency around the current scope of the system.
 
 ---
 
 ## Future Development
 
-The primary objective is to transition SkillGreen from a synthetic proof-of-concept toward real-world validation.
+**Real-world data** — ESG job descriptions, skill requirements, professional career profiles, certifications, career-transition outcomes, and expert-labelled assessments to replace synthetic labels.
 
-### Real-World Data
+**Explainability** — feature importance, SHAP-based explanations, personalized skill-gap recommendations, and suggested ESG career pathways.
 
-Potential data sources include:
+**ESG job matching** — extending from `Profile → ESG Readiness` to `Profile → ESG Readiness → Skill Gap Analysis → Recommended Skills → Relevant ESG Roles`.
 
-* ESG job descriptions
-* ESG skill requirements
-* Professional career profiles
-* Relevant certifications
-* Career-transition outcomes
-* Expert-labelled assessments
-
-### Explainability
-
-Planned improvements include:
-
-* Feature importance
-* SHAP-based explanations
-* Personalized skill-gap recommendations
-* Recommended certifications
-* ESG career pathways
-
-### ESG Job Matching
-
-The system can evolve from:
-
-```text
-Profile
-   ↓
-ESG Readiness
-```
-
-to:
-
-```text
-Profile
-   ↓
-ESG Readiness
-   ↓
-Skill Gap Analysis
-   ↓
-Recommended Skills
-   ↓
-Relevant ESG Roles
-```
-
-### Outcome-Based Learning
-
-A future version could incorporate validated career outcomes to progressively reduce dependence on synthetic scoring rules and improve real-world relevance.
+**Outcome-based learning** — incorporating validated career outcomes over time to progressively reduce dependence on synthetic scoring rules.
 
 ---
 
 ## Learning Journey
 
-SkillGreen provided practical experience across data science, machine learning, backend engineering, frontend development, and software engineering.
+SkillGreen provided practical experience across data science, machine learning, backend engineering, frontend development, and software engineering — moving from Pydantic fundamentals and single-model validation through nested models, computed fields, a full CRUD API, and finally a complete applied ML system with a trained model, tested backend, deployed frontend, and automated test suite.
 
-### Data Science
-
-* Synthetic data generation
-* Data preprocessing
-* Exploratory data analysis
-* Feature engineering
-* Class imbalance
-
-### Machine Learning
-
-* Classification
-* Logistic Regression
-* Decision Trees
-* Random Forest
-* Gradient Boosting
-* Cross-validation
-* F1-macro evaluation
-* Model selection
-
-### Backend Engineering
-
-* FastAPI
-* REST API development
-* Pydantic
-* Request validation
-* CORS
-* ML model serving
-
-### Frontend Engineering
-
-* React
-* Vite
-* API integration
-* Responsive UI
-* Data visualization
-* Component-based development
-
-### Software Engineering
-
-* Modular architecture
-* Automated testing
-* Configuration management
-* Environment management
-* Git/GitHub workflow
+The most significant shift wasn't technical knowledge alone, but a change in working process: moving from "does it run once" to "can I prove it works" — writing and running tests instead of eyeballing output, executing notebooks to completion rather than assuming correctness, and documenting honestly what's genuinely validated versus what remains a planned next step.
 
 ---
 
 ## Key Takeaway
 
-SkillGreen demonstrates the complete development lifecycle of an applied machine learning system:
+SkillGreen demonstrates the complete development lifecycle of an applied machine learning system: problem definition, data strategy, synthetic data generation, exploratory analysis, feature engineering, model comparison and training, API development, frontend integration, automated testing, and deployment.
 
-```text
-Problem Definition
-        ↓
-Data Strategy
-        ↓
-Data Generation
-        ↓
-EDA
-        ↓
-Feature Engineering
-        ↓
-Model Comparison
-        ↓
-Model Training
-        ↓
-API Development
-        ↓
-Frontend Integration
-        ↓
-Automated Testing
-        ↓
-End-to-End ML Application
-```
+The current prototype demonstrates a functional technical pipeline for structured ESG career-readiness assessment. The next major step is validation against real-world ESG career requirements and outcomes.
 
-The current prototype demonstrates a functional technical pipeline for structured ESG career-readiness assessment.
-
-The next major step is **validation against real-world ESG career requirements and outcomes**.
-
-> **The objective is to develop an ESG readiness signal that is not only technically measurable, but also meaningful in real-world career contexts.**
+> The objective is to develop an ESG readiness signal that is not only technically measurable, but also meaningful in real-world career contexts.
 
 ---
 
 ## Project Status
 
-| Attribute       | Current Status               |
-| --------------- | ---------------------------- |
-| Project Status  | **Working Prototype**        |
-| Dataset         | **8,000 synthetic profiles** |
-| Selected Model  | **Gradient Boosting**        |
-| Test Accuracy   | **94.75%**                   |
-| Test F1-Macro   | **0.935**                    |
-| Automated Tests | **11 / 11 passing**          |
-| Backend         | **FastAPI**                  |
-| Frontend        | **React + Vite**             |
-| Current Focus   | **Real-world validation**    |
+| Attribute | Status |
+|---|---|
+| Project Status | Working prototype, deployed |
+| Dataset | 8,000 synthetic profiles |
+| Selected Model | Gradient Boosting |
+| Test Accuracy | 94.75% |
+| Test F1-Macro | 0.935 |
+| Automated Tests | 11 / 11 passing |
+| Backend | FastAPI, live on Render |
+| Frontend | React + Vite, live on Vercel |
+| Current Focus | Real-world validation |
 
 ---
 
@@ -736,6 +455,4 @@ MIT License
 
 ## Contributing
 
-Contributions, suggestions, and improvements are welcome.
-
-If you find SkillGreen useful, consider starring the repository and sharing feedback.
+Contributions, suggestions, and improvements are welcome. If you find SkillGreen useful, consider starring the repository and sharing feedback.
