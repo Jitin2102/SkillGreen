@@ -50,8 +50,8 @@ SkillGreen explores a structured approach to identifying and quantifying these t
 
 ```text
 Professional Profile
-        │
-        ▼
+           │
+           ▼
 ┌─────────────────────┐
 │   Input Validation  │
 │       Pydantic      │
@@ -152,9 +152,9 @@ Models were evaluated using 5-fold cross-validation with F1-macro as the primary
 Rather than passing only raw professional attributes to the model, the application derives structured ESG features representing the three ESG dimensions. This logic is implemented using Pydantic's `computed_field`, so the exact same feature calculation runs both at training time and on live API requests — eliminating the risk of drift between how the model was trained and how it's actually used.
 
 ```text
-Professional Attributes
-        │
-        ▼
+  Professional Attributes
+             │
+             ▼
 ┌────────────────────────┐
 │ ESG Feature Engineering│
 └────────────┬───────────┘
