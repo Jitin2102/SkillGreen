@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -7,12 +9,16 @@ from model.predict import MODEL_VERSION, model, predict_output
 from schema.response_model import PredictionResponse
 from schema.user_input import UserInput
 
+logger = logging.getLogger("skillgreen")
+logging.basicConfig(level=logging.INFO)
+
 app = FastAPI(
     title="SkillGreen",
     description="Predicts ESG (Environmental, Social, Governance) career readiness "
     "from a professional's background.",
     version="1.0.0",
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -26,13 +32,11 @@ app.add_middleware(
 )
 
 
-### human readable
 @app.get("/")
 def root():
     return {"message": "Welcome to SkillGreen — ESG Readiness Prediction API"}
 
 
-### machine readable
 @app.get("/health")
 def health_check():
     status = "OK" if model else "Error"
@@ -43,7 +47,6 @@ def health_check():
     }
 
 
-### reference data, so a frontend or consumer can build valid dropdowns
 @app.get("/options")
 def get_valid_options():
     return {
@@ -54,7 +57,6 @@ def get_valid_options():
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict_readiness(data: UserInput):
-
     user_input = {
         "years_experience": data.years_experience,
         "relevant_skills_count": data.relevant_skills_count,
@@ -89,8 +91,11 @@ def predict_readiness(data: UserInput):
                 "weakest_pillar": weakest_pillar,
             },
         )
-    except Exception as e:  # noqa: BLE001
+    except Exception:
+        logger.exception("Prediction failed for input: %s", user_input)
         return JSONResponse(
             status_code=500,
-            content={"error": "Prediction failed", "details": str(e)},
+            content={
+                "error": "Prediction failed. Please try again or contact support."
+            },
         )

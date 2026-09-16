@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from config.constants import (
     ENVIRONMENTAL_PROJECT_BONUS,
@@ -20,46 +20,16 @@ EducationType = Literal[tuple(VALID_EDUCATION_LEVELS)]
 
 
 class UserInput(BaseModel):
-    years_experience: Annotated[
-        int,
-        Field(..., ge=0, le=50, description="Years of professional experience"),
-    ]
-    current_industry: Annotated[
-        IndustryType,  # type: ignore
-        Field(..., description="Current industry the user works in"),
-    ]
-    education_level: Annotated[
-        EducationType,  # type: ignore
-        Field(..., description="Highest education level completed"),
-    ]
-    has_esg_certification: Annotated[
-        bool,
-        Field(..., description="Holds a recognized ESG-related certification"),
-    ]
-    environmental_project_exposure: Annotated[
-        bool,
-        Field(..., description="Has worked on an environmental-focused initiative"),
-    ]
-    social_impact_exposure: Annotated[
-        bool,
-        Field(
-            ...,
-            description="Has worked on a social-impact initiative (DEI, labor, community)",
-        ),
-    ]
-    governance_exposure: Annotated[
-        bool,
-        Field(
-            ...,
-            description="Has worked on governance-related work (compliance, audit, reporting)",
-        ),
-    ]
-    relevant_skills_count: Annotated[
-        int,
-        Field(
-            ..., ge=0, description="Number of relevant technical/analytical skills held"
-        ),
-    ]
+    model_config = ConfigDict(extra="forbid")
+
+    years_experience: Annotated[int, Field(..., ge=0, le=50)]
+    current_industry: Annotated[IndustryType, Field(...)]
+    education_level: Annotated[EducationType, Field(...)]
+    has_esg_certification: Annotated[bool, Field(...)]
+    environmental_project_exposure: Annotated[bool, Field(...)]
+    social_impact_exposure: Annotated[bool, Field(...)]
+    governance_exposure: Annotated[bool, Field(...)]
+    relevant_skills_count: Annotated[int, Field(..., ge=0, le=30)]
 
     @computed_field
     @property
@@ -72,14 +42,12 @@ class UserInput(BaseModel):
     @computed_field
     @property
     def social_score(self) -> float:
-        score = SOCIAL_IMPACT_BONUS if self.social_impact_exposure else 0
-        return round(score, 2)
+        return SOCIAL_IMPACT_BONUS if self.social_impact_exposure else 0
 
     @computed_field
     @property
     def governance_score(self) -> float:
-        score = GOVERNANCE_EXPOSURE_BONUS if self.governance_exposure else 0
-        return round(score, 2)
+        return GOVERNANCE_EXPOSURE_BONUS if self.governance_exposure else 0
 
     @computed_field
     @property

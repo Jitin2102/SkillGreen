@@ -138,8 +138,8 @@ Models were evaluated using 5-fold cross-validation with F1-macro as the primary
 
 | Metric | Result |
 |---|---:|
-| Test Accuracy | **94.75%** |
-| Test F1-Macro | **0.935** |
+| Test Accuracy | **94.81%** |
+| Test F1-Macro | **0.926** |
 | Cross-Validation | 5-fold |
 | Dataset | Synthetic |
 
@@ -218,6 +218,8 @@ Professional Attributes
 
 **Frontend** — React, Vite, lucide-react, CSS
 
+**Infrastructure** — Docker, Docker Compose, nginx, Render (backend), Vercel (frontend)
+
 ---
 
 ## Project Structure
@@ -227,6 +229,9 @@ SkillGreen/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
+├── .dockerignore
+├── Dockerfile
+├── docker-compose.yml
 ├── pytest.ini
 ├── app.py
 │
@@ -253,6 +258,9 @@ SkillGreen/
 │   └── test_app.py
 │
 └── frontend/
+    ├── Dockerfile
+    ├── .dockerignore
+    ├── nginx.conf
     ├── package.json
     ├── package-lock.json
     ├── vite.config.js
@@ -318,6 +326,36 @@ Vite will print the local development URL. The frontend communicates with the Fa
 
 ---
 
+## Running with Docker
+
+Both the backend and frontend are containerized. To run the full stack:
+
+```bash
+docker compose up --build
+```
+
+- Backend: `http://localhost:8000` (docs at `/docs`)
+- Frontend: `http://localhost:5173`
+
+To run either service on its own:
+
+```bash
+# backend
+docker build -t skillgreen .
+docker run -p 8000:8000 skillgreen
+
+# frontend
+cd frontend
+docker build -t skillgreen-frontend .
+docker run -p 5173:80 skillgreen-frontend
+```
+
+The frontend image uses a multi-stage build — Node compiles the Vite app, then the built static files are served by nginx, so the final image contains no Node.js or `node_modules`.
+
+> Note: `API_BASE` in `frontend/src/App.jsx` is compiled in at build time, so the containerized frontend points at the deployed backend by default rather than the local `backend` container.
+
+---
+
 ## Testing
 
 ```bash
@@ -371,6 +409,8 @@ Response schema defined in `schema/response_model.py`.
 | Integration | ML model integrated with API, verified with real inputs |
 | Frontend | React + Vite interface implemented and tested live |
 | Testing | 11 / 11 automated tests passing |
+| Input hardening | Adversarial inputs tested (unbounded values, typo'd fields); confirmed rejected |
+| Containerization | Backend and frontend both containerized, verified locally |
 | Deployment | Backend live on Render, frontend live on Vercel |
 
 ---
@@ -391,13 +431,39 @@ The current system has an important methodological limitation: **the training da
 
 Consequently:
 
-- The 94.75% accuracy should not be interpreted as real-world hiring accuracy
+- The 94.81% accuracy should not be interpreted as real-world hiring accuracy
 - Labels reflect the project's defined ESG scoring framework, not observed outcomes
 - Synthetic data cannot fully represent the complexity of real professional careers
 - The system has not been validated against real career-transition outcomes
 - Predictions should not be used as the sole basis for recruitment or employment decisions
 
 These limitations are documented explicitly to maintain transparency around the current scope of the system.
+
+---
+
+## Model Iteration & Hardening
+
+After the initial version shipped, testing with real-world-style inputs surfaced two categories of issues, both investigated and fixed rather than patched superficially.
+
+**Scoring formula rebalanced.** The original weights let boolean flags (certification, exposure checkboxes) dominate over years of experience and skills count — a profile with 0 years of experience and 0 skills could reach "Medium" readiness purely from two checkboxes and a certification. Weights were rebalanced so experience and skill depth carry meaningfully more influence than flat flags:
+
+| Parameter | Before | After |
+|---|---:|---:|
+| Years of experience weight | 0.3 / year | 1.0 / year |
+| Skills count weight | 2 / skill | 3 / skill |
+| Each exposure/certification bonus | 10 | 6 |
+| Low / Medium thresholds | 15 / 30 | 20 / 45 |
+
+The full 8,000-row dataset was regenerated with the new weights and the model retrained from scratch, comparing all four candidate algorithms again rather than assuming the previous winner still held. Gradient Boosting won again, with comparable accuracy (94.81% vs. 94.75%) — confirming the rebalance fixed the edge-case behavior without degrading overall performance.
+
+**Input validation hardened.** Testing the API against unusual and adversarial inputs found two real gaps:
+
+- `relevant_skills_count` had no upper bound. A value like 999,999,999 passed validation and produced an esg_readiness_score in the billions. Fixed with an upper bound (`le=30`).
+- Unexpected or typo'd fields (e.g. `yeras_experience`) were silently ignored by default rather than rejected, which could mask client-side bugs. Fixed by setting `extra="forbid"` on the input schema.
+
+Separately, the `/predict` endpoint's error handler previously returned raw exception text to the client, which could leak internal details (file paths, library internals) on failure. It now logs full detail server-side and returns only a generic message to the client.
+
+All fixes were verified with actual adversarial test inputs run against the live schema and API — not just reasoned about — confirming each attack is now rejected while legitimate requests, including exact boundary values, still succeed correctly.
 
 ---
 
@@ -438,8 +504,8 @@ The current prototype demonstrates a functional technical pipeline for structure
 | Project Status | Working prototype, deployed |
 | Dataset | 8,000 synthetic profiles |
 | Selected Model | Gradient Boosting |
-| Test Accuracy | 94.75% |
-| Test F1-Macro | 0.935 |
+| Test Accuracy | 94.81% |
+| Test F1-Macro | 0.926 |
 | Automated Tests | 11 / 11 passing |
 | Backend | FastAPI, live on Render |
 | Frontend | React + Vite, live on Vercel |
