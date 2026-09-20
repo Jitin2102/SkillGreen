@@ -7,8 +7,8 @@ from auth.security import ALGORITHM
 from db.database import SECRET_KEY, get_db
 from db.models import User
 
-bearer_scheme = HTTPBearer()
-optional_bearer_scheme = HTTPBearer(auto_error=False)
+bearer_scheme = HTTPBearer(scheme_name="BearerAuth")
+optional_bearer_scheme = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
 
 
 def get_current_user(

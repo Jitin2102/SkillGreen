@@ -22,7 +22,7 @@ app = FastAPI(
     title="SkillGreen",
     description="Predicts ESG (Environmental, Social, Governance) career readiness "
     "from a professional's background.",
-    version="1.2.0",
+    version="1.0.0",
 )
 app.include_router(auth_router)
 app.include_router(profile_router)
