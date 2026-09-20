@@ -1,11 +1,17 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 
+from auth.dependencies import get_current_user, get_current_user_optional
+from auth.routes import router as auth_router
 from config.constants import VALID_EDUCATION_LEVELS, VALID_INDUSTRIES
+from db.database import get_db
+from db.models import Assessment, User
 from model.predict import MODEL_VERSION, model, predict_output
+from routes.profile import router as profile_router
 from schema.response_model import PredictionResponse
 from schema.user_input import UserInput
 
@@ -16,8 +22,10 @@ app = FastAPI(
     title="SkillGreen",
     description="Predicts ESG (Environmental, Social, Governance) career readiness "
     "from a professional's background.",
-    version="1.0.0",
+    version="1.2.0",
 )
+app.include_router(auth_router)
+app.include_router(profile_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -55,8 +63,17 @@ def get_valid_options():
     }
 
 
+@app.get("/me")
+def read_me(current_user: User = Depends(get_current_user)):  # noqa: B008
+    return {"email": current_user.email, "id": current_user.id}
+
+
 @app.post("/predict", response_model=PredictionResponse)
-def predict_readiness(data: UserInput):
+def predict_readiness(
+    data: UserInput,
+    current_user: User | None = Depends(get_current_user_optional),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
     user_input = {
         "years_experience": data.years_experience,
         "relevant_skills_count": data.relevant_skills_count,
@@ -81,6 +98,17 @@ def predict_readiness(data: UserInput):
             "governance": data.governance_score,
         }
         weakest_pillar = min(pillar_breakdown, key=pillar_breakdown.get)
+
+        if current_user is not None:
+            assessment = Assessment(
+                user_id=current_user.id,
+                predicted_category=prediction["category"],
+                confidence=prediction["confidence"],
+                pillar_breakdown=pillar_breakdown,
+                weakest_pillar=weakest_pillar,
+            )
+            db.add(assessment)
+            db.commit()
 
         return JSONResponse(
             status_code=200,
