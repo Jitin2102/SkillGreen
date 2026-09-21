@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, LayoutDashboard, LogIn, UserPlus } from "lucide-react";
+import { LogOut, LayoutDashboard, LogIn, UserPlus, ClipboardList } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
@@ -25,6 +25,13 @@ export default function Header() {
                 </Link>
 
                 <nav className="flex items-center gap-2 sm:gap-3">
+                    <Link
+                        to="/predict"
+                        className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-ink/70 hover:text-ink px-2 sm:px-3 py-1.5 sm:py-2 rounded-md hover:bg-black/[0.04] transition-colors"
+                    >
+                        <ClipboardList size={14} strokeWidth={2.25} />
+                        Assessment
+                    </Link>
                     {isAuthenticated ? (
                         <>
                             <Link
