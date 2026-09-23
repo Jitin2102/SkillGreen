@@ -11,6 +11,15 @@ class UserLogin(BaseModel):
     password: str
 
 
+class OtpRequest(BaseModel):
+    email: EmailStr
+
+
+class OtpVerify(BaseModel):
+    email: EmailStr
+    code: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

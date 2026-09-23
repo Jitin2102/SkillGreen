@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { Leaf, Users, ScaleIcon, ArrowRight, ClipboardList, LineChart, UserPlus } from "lucide-react";
+import { Leaf, Users, ScaleIcon, ArrowRight, ClipboardList, LineChart, LogIn } from "lucide-react";
 import Header from "../components/Header";
-import { useAuth } from "../context/AuthContext";
 
 const PILLARS = [
     {
@@ -49,8 +48,6 @@ const STEPS = [
 ];
 
 export default function Landing() {
-    const { isAuthenticated } = useAuth();
-
     return (
         <div className="min-h-screen text-ink relative font-sans overflow-x-hidden">
             <div className="bg-aurora">
@@ -73,23 +70,21 @@ export default function Landing() {
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <Link
-                        to="/predict"
+                        to="/register"
                         className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-[var(--color-ink)] text-[var(--color-parchment)] px-6 py-3 text-sm font-bold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200"
                     >
-                        Try the free assessment <ArrowRight size={16} />
+                        Sign up free <ArrowRight size={16} />
                     </Link>
-                    {!isAuthenticated && (
-                        <Link
-                            to="/register"
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md border border-black/15 px-6 py-3 text-sm font-bold tracking-wide hover:bg-black/[0.04] transition-colors"
-                        >
-                            <UserPlus size={16} />
-                            Sign up to save progress
-                        </Link>
-                    )}
+                    <Link
+                        to="/login"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md border border-black/15 px-6 py-3 text-sm font-bold tracking-wide hover:bg-black/[0.04] transition-colors"
+                    >
+                        <LogIn size={16} />
+                        Log in
+                    </Link>
                 </div>
                 <p className="text-[11px] sm:text-xs text-ink/45 mt-4">
-                    No account needed to try it — sign up any time to save your history.
+                    Create an account to run your assessment and track your progress over time.
                 </p>
             </section>
 
@@ -141,12 +136,12 @@ export default function Landing() {
             {/* Closing CTA */}
             <section className="w-full max-w-[700px] mx-auto px-4 py-12 sm:py-16 text-center">
                 <h2 className="font-serif text-xl sm:text-2xl font-bold mb-3">Ready to see where you stand?</h2>
-                <p className="text-ink/60 text-xs sm:text-sm mb-6">Takes about a minute. No account required.</p>
+                <p className="text-ink/60 text-xs sm:text-sm mb-6">Create a free account to get started.</p>
                 <Link
-                    to="/predict"
+                    to="/register"
                     className="inline-flex items-center gap-2 rounded-md bg-[var(--color-ink)] text-[var(--color-parchment)] px-6 py-3 text-sm font-bold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] transition-all duration-200"
                 >
-                    Start the assessment <ArrowRight size={16} />
+                    Sign up free <ArrowRight size={16} />
                 </Link>
             </section>
         </div>

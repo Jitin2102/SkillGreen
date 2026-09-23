@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
+import OtpLogin from "../components/OtpLogin";
 
 const inputClasses =
     "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base shadow-sm " +
@@ -26,6 +27,7 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [mode, setMode] = useState("password"); // "password" | "otp"
     const { register } = useAuth();
     const navigate = useNavigate();
 
@@ -69,66 +71,83 @@ export default function Register() {
                     Save your profile and track ESG readiness over time.
                 </p>
 
-                <form
-                    onSubmit={handleSubmit}
-                    className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-7 shadow-sm"
-                >
-                    <FormField label="Email" icon={Mail}>
-                        <input
-                            type="email"
-                            required
-                            autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className={inputClasses}
-                            placeholder="you@example.com"
-                        />
-                    </FormField>
-
-                    <FormField label="Password" icon={Lock}>
-                        <input
-                            type="password"
-                            required
-                            autoComplete="new-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className={inputClasses}
-                            placeholder="At least 6 characters"
-                        />
-                    </FormField>
-
-                    <FormField label="Confirm password" icon={Lock}>
-                        <input
-                            type="password"
-                            required
-                            autoComplete="new-password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className={inputClasses}
-                            placeholder="••••••••"
-                        />
-                    </FormField>
-
-                    {error && (
-                        <div className="mb-4 text-xs sm:text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-3 py-2 sm:px-4 sm:py-3 break-words">
-                            {error}
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-md bg-[var(--color-ink)] text-[var(--color-parchment)] py-2.5 sm:py-3.5 text-xs sm:text-base font-bold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                {mode === "password" && (
+                    <form
+                        onSubmit={handleSubmit}
+                        className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-7 shadow-sm"
                     >
-                        {loading ? (
-                            <Loader2 size={16} className="animate-spin" />
-                        ) : (
-                            <>
-                                Create account <ArrowRight size={16} />
-                            </>
+                        <FormField label="Email" icon={Mail}>
+                            <input
+                                type="email"
+                                required
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className={inputClasses}
+                                placeholder="you@example.com"
+                            />
+                        </FormField>
+
+                        <FormField label="Password" icon={Lock}>
+                            <input
+                                type="password"
+                                required
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className={inputClasses}
+                                placeholder="At least 6 characters"
+                            />
+                        </FormField>
+
+                        <FormField label="Confirm password" icon={Lock}>
+                            <input
+                                type="password"
+                                required
+                                autoComplete="new-password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className={inputClasses}
+                                placeholder="••••••••"
+                            />
+                        </FormField>
+
+                        {error && (
+                            <div className="mb-4 text-xs sm:text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-3 py-2 sm:px-4 sm:py-3 break-words">
+                                {error}
+                            </div>
                         )}
-                    </button>
-                </form>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full rounded-md bg-[var(--color-ink)] text-[var(--color-parchment)] py-2.5 sm:py-3.5 text-xs sm:text-base font-bold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {loading ? (
+                                <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                                <>
+                                    Create account <ArrowRight size={16} />
+                                </>
+                            )}
+                        </button>
+                    </form>
+                )}
+
+                {mode === "otp" && (
+                    <div className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-7 shadow-sm">
+                        <OtpLogin onSuccess={() => navigate("/dashboard")} />
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => { setMode(mode === "password" ? "otp" : "password"); setError(null); }}
+                    className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold text-ink/60 hover:text-ink mt-4"
+                >
+                    <KeyRound size={13} strokeWidth={2.25} />
+                    {mode === "password" ? "Sign up with an emailed code instead" : "Sign up with a password instead"}
+                </button>
 
                 <p className="text-center text-xs sm:text-sm text-ink/60 mt-5">
                     Already have an account?{" "}

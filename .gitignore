@@ -12,6 +12,7 @@ venv/
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+frontend\.gitignore
 
 .DS_Store
 .vscode/

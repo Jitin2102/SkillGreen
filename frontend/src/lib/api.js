@@ -1,3 +1,6 @@
+// Centralized API client. Reads the base URL from Vite's env system,
+// falling back to your existing production URL so nothing breaks if
+// VITE_API_BASE isn't set.
 export const API_BASE = import.meta.env.VITE_API_BASE || "https://skillgreen.onrender.com";
 
 const TOKEN_KEY = "skillgreen_token";
@@ -14,6 +17,12 @@ export function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
 }
 
+/**
+ * Wrapper around fetch that:
+ * - prefixes the API base URL
+ * - attaches the JWT as a Bearer token if one is stored
+ * - parses JSON responses and throws a readable Error on failure
+ */
 export async function apiFetch(path, options = {}) {
     const token = getToken();
     const headers = {
@@ -59,6 +68,20 @@ export function loginUser(email, password) {
     return apiFetch("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email, password }),
+    });
+}
+
+export function requestOtp(email) {
+    return apiFetch("/auth/otp/request", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+    });
+}
+
+export function verifyOtp(email, code) {
+    return apiFetch("/auth/otp/verify", {
+        method: "POST",
+        body: JSON.stringify({ email, code }),
     });
 }
 

@@ -1,9 +1,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getToken, setToken, clearToken, loginUser, registerUser } from "../lib/api";
+import { getToken, setToken, clearToken, loginUser, registerUser, requestOtp, verifyOtp } from "../lib/api";
 
 const AuthContext = createContext(null);
 
 function decodeEmailFromToken(token) {
+    // JWTs are base64url header.payload.signature — we only need the
+    // payload to read the "sub" claim (the user's email), no verification
+    // needed here since the backend verifies every real request anyway.
     try {
         const payload = token.split(".")[1];
         const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
@@ -40,6 +43,16 @@ export function AuthProvider({ children }) {
         setTokenState(data.access_token);
     }
 
+    async function sendOtp(userEmail) {
+        await requestOtp(userEmail);
+    }
+
+    async function loginWithOtp(userEmail, code) {
+        const data = await verifyOtp(userEmail, code);
+        setToken(data.access_token);
+        setTokenState(data.access_token);
+    }
+
     function logout() {
         clearToken();
         setTokenState(null);
@@ -51,6 +64,8 @@ export function AuthProvider({ children }) {
         isAuthenticated: !!token,
         login,
         register,
+        sendOtp,
+        loginWithOtp,
         logout,
     };
 
