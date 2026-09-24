@@ -4,18 +4,18 @@
   --font-display: "Fraunces", serif;
   --font-body: "Inter", sans-serif;
 
-  --color-ink: #1b2a1e;
+  --color-ink: #162519;
   --color-parchment: #f6f4ec;
   --color-parchment-dim: #ece8dc;
   --color-card: #fffdf7;
-  --color-ochre: #b8892b;
-  --color-ochre-dark: #96701f;
-  --color-ochre-light: #f2e3c6;
-  --color-environmental: #3f6b4f;
-  --color-environmental-light: #e3ecdf;
-  --color-social: #4a6fa5;
+  --color-ochre: #bc8518;
+  --color-ochre-dark: #8b6410;
+  --color-ochre-light: #f8e1b6;
+  --color-environmental: #2a573a;
+  --color-environmental-light: #dcebd5;
+  --color-social: #3f67a1;
   --color-social-light: #e2e9f3;
-  --color-governance: #7a5c8e;
+  --color-governance: #735288;
   --color-governance-light: #ece4f1;
 }
 
