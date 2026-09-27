@@ -16,7 +16,9 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=True)  # nullable: Google-only accounts have no password
+    hashed_password = Column(
+        String, nullable=True
+    )  # nullable: Google-only accounts have no password
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -52,3 +54,14 @@ class OtpCode(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Resume(Base):
+    __tablename__ = "resumes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    original_filename = Column(String, nullable=False)
+    storage_path = Column(String, nullable=False)
+    raw_text = Column(String, nullable=True)
+    extracted_skills = Column(JSON, nullable=True)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())

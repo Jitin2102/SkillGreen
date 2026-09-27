@@ -1,12 +1,26 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: devpass
+      POSTGRES_DB: skillgreen
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+    depends_on:
+      - db
     environment:
       - PORT=8000
+      - DATABASE_URL=postgresql://postgres:devpass@db:5432/skillgreen
+      - SECRET_KEY=${SECRET_KEY:-dev-only-insecure-secret-change-me}
 
   frontend:
     build:
@@ -16,3 +30,6 @@ services:
       - "5173:80"
     depends_on:
       - backend
+
+volumes:
+  pgdata:

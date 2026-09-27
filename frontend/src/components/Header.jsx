@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, LayoutDashboard, LogIn, UserPlus, ClipboardList } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/skillgreen-logo.png";
 
 export default function Header() {
     const { isAuthenticated, email, logout } = useAuth();
@@ -15,13 +16,14 @@ export default function Header() {
         <header className="border-b border-black/[0.09]">
             <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-3 sm:py-5 flex flex-wrap items-center justify-between gap-3">
                 <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="h-7 w-7 sm:h-8 sm:w-8 bg-[var(--color-ink)] flex items-center justify-center rounded-sm shrink-0">
-                        <span className="font-serif text-[var(--color-parchment)] text-sm sm:text-base font-bold">S</span>
-                    </div>
-                    <div className="min-w-0">
-                        <h1 className="text-[13px] sm:text-base font-bold tracking-tight leading-none truncate">SkillGreen</h1>
-                        <p className="text-[9px] sm:text-xs text-ink/60 mt-0.5 sm:mt-1 tracking-widest uppercase font-medium truncate">ESG Readiness Index</p>
-                    </div>
+                    <img
+                        src={logo}
+                        alt="SkillGreen"
+                        className="h-9 sm:h-11 w-auto object-contain shrink-0"
+                    />
+                    <span className="text-[9px] sm:text-[11px] text-ink/55 tracking-[0.15em] uppercase font-semibold whitespace-nowrap border-l border-black/15 pl-2.5 sm:pl-3">
+                        ESG Readiness Index
+                    </span>
                 </Link>
 
                 <nav className="flex items-center gap-2 sm:gap-3">

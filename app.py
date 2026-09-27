@@ -12,6 +12,7 @@ from db.database import get_db
 from db.models import Assessment, User
 from model.predict import MODEL_VERSION, model, predict_output
 from routes.profile import router as profile_router
+from routes.resume import router as resume_router
 from schema.response_model import PredictionResponse
 from schema.user_input import UserInput
 
@@ -26,6 +27,7 @@ app = FastAPI(
 )
 app.include_router(auth_router)
 app.include_router(profile_router)
+app.include_router(resume_router)
 
 app.add_middleware(
     CORSMiddleware,
