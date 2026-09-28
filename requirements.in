@@ -1,0 +1,30 @@
+
+# --- API ---
+fastapi==0.141.1
+uvicorn==0.52.4
+pydantic==2.13.4
+python-multipart==0.0.32
+email-validator==2.3.0
+
+# --- ML / data ---
+scikit-learn==1.9.0
+pandas==3.0.5
+numpy==2.5.2
+scipy==1.18.1
+joblib==1.5.3
+
+# --- Database ---
+sqlalchemy==2.0.54
+psycopg2-binary==2.9.13
+alembic==1.20.0
+python-dotenv==1.2.3
+
+# --- Authentication ---
+passlib==1.7.4
+bcrypt==3.2.2
+python-jose==3.5.0
+cryptography==50.0.0
+
+# --- Milestone 2: resume parsing ---
+pdfplumber==0.11.10
+python-docx==1.2.0

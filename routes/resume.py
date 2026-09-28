@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from auth.dependencies import get_current_user
 from db.database import get_db
 from db.models import Resume, User
+from resume.parser import extract_text
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 
@@ -49,7 +50,18 @@ async def upload_resume(
     db.commit()
     db.refresh(resume)
 
-    return {"id": resume.id, "filename": resume.original_filename, "status": "uploaded"}
+    try:
+        resume.raw_text = extract_text(storage_path)
+        db.commit()
+    except Exception:  # noqa: S110
+        pass
+
+    return {
+        "id": resume.id,
+        "filename": resume.original_filename,
+        "status": "uploaded",
+        "parsed": resume.raw_text is not None,
+    }
 
 
 @router.get("/list")
@@ -72,3 +84,26 @@ def list_resumes(
         }
         for r in resumes
     ]
+
+
+@router.get("/{resume_id}")
+def get_resume(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+
+    return {
+        "id": resume.id,
+        "filename": resume.original_filename,
+        "uploaded_at": resume.uploaded_at,
+        "raw_text": resume.raw_text,
+        "extracted_skills": resume.extracted_skills,
+    }
