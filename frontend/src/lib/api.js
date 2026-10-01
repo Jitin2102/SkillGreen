@@ -1,6 +1,3 @@
-// Centralized API client. Reads the base URL from Vite's env system,
-// falling back to your existing production URL so nothing breaks if
-// VITE_API_BASE isn't set.
 export const API_BASE = import.meta.env.VITE_API_BASE || "https://skillgreen.onrender.com";
 
 const TOKEN_KEY = "skillgreen_token";
@@ -17,12 +14,6 @@ export function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
 }
 
-/**
- * Wrapper around fetch that:
- * - prefixes the API base URL
- * - attaches the JWT as a Bearer token if one is stored
- * - parses JSON responses and throws a readable Error on failure
- */
 export async function apiFetch(path, options = {}) {
     const token = getToken();
     const headers = {
@@ -110,6 +101,53 @@ export function predictReadiness(payload) {
     });
 }
 
+export function explainPrediction(payload) {
+    return apiFetch("/predict/explain", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
 export function getOptions() {
     return apiFetch("/options");
+}
+
+// --- Resume (Milestone 2) ---
+// Uses raw fetch, not apiFetch, since file upload needs multipart/form-data
+// rather than the JSON content-type apiFetch always sets.
+export async function uploadResume(file) {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/resume/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error((data && data.detail) || `Upload failed (${res.status})`);
+    }
+    return data;
+}
+
+export function listResumes() {
+    return apiFetch("/resume/list");
+}
+
+export function getResume(resumeId) {
+    return apiFetch(`/resume/${resumeId}`);
+}
+
+export function getSkillGap(resumeId) {
+    return apiFetch(`/resume/${resumeId}/skill-gap`);
+}
+
+export function getInferredFields(resumeId) {
+    return apiFetch(`/resume/${resumeId}/inferred-fields`);
 }

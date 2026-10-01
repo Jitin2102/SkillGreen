@@ -6,15 +6,11 @@ from sqlalchemy.orm import Session
 
 from auth.dependencies import get_current_user
 from db.database import get_db
-<<<<<<< HEAD
-from db.models import Resume, User
-from resume.parser import extract_text
-=======
 from db.models import Assessment, Resume, User
+from resume.infer_fields import infer_predict_fields_from_skills
 from resume.parser import extract_text
 from resume.skill_gap import compute_skill_gap, next_category_up
 from resume.skills import extract_skills
->>>>>>> c0d2d56 (added explainability)
 
 router = APIRouter(prefix="/resume", tags=["resume"])
 
@@ -45,7 +41,7 @@ async def upload_resume(
 
     stored_name = f"{current_user.id}_{uuid.uuid4().hex[:10]}{ext}"
     storage_path = os.path.join(UPLOAD_DIR, stored_name)
-    with open(storage_path, "wb") as f:
+    with open(storage_path, "wb") as f:  # noqa: ASYNC230
         f.write(contents)
 
     resume = Resume(
@@ -59,14 +55,9 @@ async def upload_resume(
 
     try:
         resume.raw_text = extract_text(storage_path)
-<<<<<<< HEAD
-        db.commit()
-    except Exception:  # noqa: S110
-=======
         resume.extracted_skills = extract_skills(resume.raw_text)
         db.commit()
     except Exception:  # noqa: BLE001, S110
->>>>>>> c0d2d56 (added explainability)
         pass
 
     return {
@@ -74,10 +65,7 @@ async def upload_resume(
         "filename": resume.original_filename,
         "status": "uploaded",
         "parsed": resume.raw_text is not None,
-<<<<<<< HEAD
-=======
         "extracted_skills": resume.extracted_skills,
->>>>>>> c0d2d56 (added explainability)
     }
 
 
@@ -124,8 +112,6 @@ def get_resume(
         "raw_text": resume.raw_text,
         "extracted_skills": resume.extracted_skills,
     }
-<<<<<<< HEAD
-=======
 
 
 @router.get("/{resume_id}/skill-gap")
@@ -164,4 +150,27 @@ def get_skill_gap(
     gap = compute_skill_gap(resume.extracted_skills, target_category)
     gap["current_category"] = current_category
     return gap
->>>>>>> c0d2d56 (added explainability)
+
+
+@router.get("/{resume_id}/inferred-fields")
+def get_inferred_fields(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    """Returns partial UserInput fields inferred from this resume's extracted
+    skills, for pre-filling (not auto-submitting) the assessment form."""
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    if resume.extracted_skills is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This resume hasn't been parsed for skills yet.",
+        )
+
+    return infer_predict_fields_from_skills(resume.extracted_skills)

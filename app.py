@@ -10,6 +10,7 @@ from auth.routes import router as auth_router
 from config.constants import VALID_EDUCATION_LEVELS, VALID_INDUSTRIES
 from db.database import get_db
 from db.models import Assessment, User
+from model.explain import explain_score
 from model.predict import MODEL_VERSION, model, predict_output
 from routes.profile import router as profile_router
 from routes.resume import router as resume_router
@@ -68,15 +69,15 @@ def get_valid_options():
 
 
 @app.get("/me")
-def read_me(current_user: User = Depends(get_current_user)):  # noqa: B008
+def read_me(current_user: User = Depends(get_current_user)):
     return {"email": current_user.email, "id": current_user.id}
 
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict_readiness(
     data: UserInput,
-    current_user: User | None = Depends(get_current_user_optional),  # noqa: B008
-    db: Session = Depends(get_db),  # noqa: B008
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
 ):
     user_input = {
         "years_experience": data.years_experience,
@@ -131,3 +132,19 @@ def predict_readiness(
                 "error": "Prediction failed. Please try again or contact support."
             },
         )
+
+
+@app.post("/predict/explain")
+def explain_prediction(data: UserInput):
+    """Returns an exact contribution breakdown against the scoring FORMULA
+    (not the trained model's internals — see model/explain.py docstring).
+    Same input shape as /predict."""
+    user_input = {
+        "years_experience": data.years_experience,
+        "relevant_skills_count": data.relevant_skills_count,
+        "environmental_project_exposure": data.environmental_project_exposure,
+        "social_impact_exposure": data.social_impact_exposure,
+        "governance_exposure": data.governance_exposure,
+        "has_esg_certification": data.has_esg_certification,
+    }
+    return explain_score(user_input)
