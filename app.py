@@ -69,15 +69,15 @@ def get_valid_options():
 
 
 @app.get("/me")
-def read_me(current_user: User = Depends(get_current_user)):
+def read_me(current_user: User = Depends(get_current_user)):  # noqa: B008
     return {"email": current_user.email, "id": current_user.id}
 
 
 @app.post("/predict", response_model=PredictionResponse)
 def predict_readiness(
     data: UserInput,
-    current_user: User | None = Depends(get_current_user_optional),
-    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
 ):
     user_input = {
         "years_experience": data.years_experience,
