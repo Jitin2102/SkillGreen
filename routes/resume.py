@@ -160,8 +160,6 @@ def get_inferred_fields(
     current_user: User = Depends(get_current_user),  # noqa: B008
     db: Session = Depends(get_db),  # noqa: B008
 ):
-    """Returns partial UserInput fields inferred from this resume's extracted
-    skills, for pre-filling (not auto-submitting) the assessment form."""
     resume = (
         db.query(Resume)
         .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
