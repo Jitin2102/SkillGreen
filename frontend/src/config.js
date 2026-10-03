@@ -48,3 +48,14 @@ export const NAV = [
   { id: "method", label: "How it works" },
   { id: "about", label: "About" },
 ];
+export const EXPLAIN_PATH = "/predict/explain";
+export const THRESHOLDS = { low: 20, medium: 45 }; // LOW_THRESHOLD / MEDIUM_THRESHOLD in config/constants.py
+// Keys from model/explain.py -> display names
+export const FACTOR_LABELS = {
+  years_experience: "Years of experience",
+  relevant_skills_count: "ESG skills",
+  environmental_project_exposure: "Environmental project work",
+  social_impact_exposure: "Social impact work",
+  governance_exposure: "Governance work",
+  has_esg_certification: "ESG certification",
+};

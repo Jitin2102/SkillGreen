@@ -4,9 +4,6 @@ import { getToken, setToken, clearToken, loginUser, registerUser, requestOtp, ve
 const AuthContext = createContext(null);
 
 function decodeEmailFromToken(token) {
-    // JWTs are base64url header.payload.signature — we only need the
-    // payload to read the "sub" claim (the user's email), no verification
-    // needed here since the backend verifies every real request anyway.
     try {
         const payload = token.split(".")[1];
         const decoded = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
@@ -15,9 +12,20 @@ function decodeEmailFromToken(token) {
         return null;
     }
 }
-
+function isExpired(token) {
+    try {
+        const { exp } = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        return exp ? exp * 1000 < Date.now() : false;
+    } catch {
+        return true;
+    }
+}
 export function AuthProvider({ children }) {
-    const [token, setTokenState] = useState(getToken());
+    const [token, setTokenState] = useState(() => {
+    const t = getToken();
+    if (t && isExpired(t)) { clearToken(); return null; }
+    return t;
+});
     const [email, setEmail] = useState(() => {
         const existing = getToken();
         return existing ? decodeEmailFromToken(existing) : null;

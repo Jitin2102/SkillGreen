@@ -1,5 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PILLAR_META, CATEGORY_TONE } from "../lib/designConstants";
+import { api } from "../lib/http";
+import { useAuth } from "../context/AuthContext";
+import Header from "../components/Header";
+import { PREDICT_PATH, OPTIONS_PATH, EXPLAIN_PATH, PILLARS, LIMITS, THRESHOLDS, FACTOR_LABELS } from "../config";
 import {
     Leaf,
     Users,
@@ -11,29 +15,68 @@ import {
     Loader2,
 } from "lucide-react";
 
-const API_BASE = "https://skillgreen.onrender.com";
-
-
-
-function PillarBar({ label, value }) {
-    const meta = PILLAR_META[label.toLowerCase()] ?? PILLAR_META.environmental;
-    const pct = Math.min(100, Math.max(4, value * 3));
+// Each pillar is scaled to its own maximum (see PILLARS in src/config.js).
+function PillarBar({ pillarKey, value }) {
+    const meta = PILLAR_META[pillarKey] ?? PILLAR_META.environmental;
+    const max = PILLARS.find((p) => p.key === pillarKey)?.max ?? 100;
+    const pct = Math.min(100, Math.max(4, (value / max) * 100));
     const Icon = meta.icon;
     return (
         <div className="mb-4 sm:mb-5 w-full">
             <div className="flex justify-between items-baseline mb-1.5 sm:mb-2">
                 <span className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs md:text-sm font-medium text-ink">
                     <Icon size={14} className={`shrink-0 ${meta.iconColor}`} strokeWidth={2.25} />
-                    <span className="truncate">{label}</span>
+                    <span className="truncate">{meta.label}</span>
                 </span>
-                <span className="text-[11px] sm:text-xs md:text-sm font-semibold tabular-nums text-ink/80 ml-2">{value}</span>
+                <span className="text-[11px] sm:text-xs md:text-sm font-semibold tabular-nums text-ink/80 ml-2">{value} / {max}</span>
             </div>
             <div className="h-1.5 sm:h-2 w-full bg-black/[0.07] overflow-hidden rounded-full">
-                <div
-                    className={`h-full ${meta.bar} transition-all duration-700 ease-out`}
-                    style={{ width: `${pct}%` }}
-                />
+                <div className={`h-full ${meta.bar} transition-all duration-700 ease-out`} style={{ width: `${pct}%` }} />
             </div>
+        </div>
+    );
+}
+
+// Breakdown from POST /predict/explain (explains the scoring formula, not the trained model).
+function Explain({ explain, onLoad }) {
+    if (!explain) {
+        return (
+            <button
+                type="button"
+                onClick={onLoad}
+                className="mt-4 w-full rounded-md border border-black/12 py-2 text-xs sm:text-sm font-semibold text-ink/80 hover:bg-black/[0.04] transition-colors"
+            >
+                Explain this score
+            </button>
+        );
+    }
+    if (explain.error) {
+        return (
+            <p className="mt-4 text-xs sm:text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-3 py-2 break-words">
+                {explain.error}
+            </p>
+        );
+    }
+    const rows = Object.entries(explain.contributions);
+    const top = Math.max(...rows.map(([, v]) => v), 1);
+    return (
+        <div className="mt-5 pt-5 border-t border-black/[0.08] w-full">
+            <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-ink/75 mb-2">Where your score comes from</p>
+            <p className="text-[11px] sm:text-xs text-ink/60 mb-4 leading-relaxed">
+                Total {explain.total_from_these_factors}. Below {THRESHOLDS.low} is Low, below {THRESHOLDS.medium} is Medium,
+                {" "}{THRESHOLDS.medium} or more is High. This explains the scoring formula, not the trained model.
+            </p>
+            {rows.map(([k, v]) => (
+                <div key={k} className={`mb-3 ${v === 0 ? "opacity-50" : ""}`}>
+                    <div className="flex justify-between text-[11px] sm:text-xs font-medium text-ink mb-1">
+                        <span>{FACTOR_LABELS[k] ?? k}</span>
+                        <span className="tabular-nums">+{v}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-black/[0.07] rounded-full overflow-hidden">
+                        <div className="h-full bg-[var(--color-ochre)] rounded-full" style={{ width: `${(v / top) * 100}%` }} />
+                    </div>
+                </div>
+            ))}
         </div>
     );
 }
@@ -59,6 +102,7 @@ const checkboxRow =
     "hover:bg-black/[0.03] transition-colors cursor-pointer w-full";
 
 export default function Predictor() {
+    const { token } = useAuth(); // sent with /predict so signed-in users get the assessment saved
     const [options, setOptions] = useState({ industries: [], education_levels: [] });
     const [form, setForm] = useState({
         years_experience: 5,
@@ -71,12 +115,14 @@ export default function Predictor() {
         relevant_skills_count: 3,
     });
     const [result, setResult] = useState(null);
+    const [explain, setExplain] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [waking, setWaking] = useState(false);
+    const lastPayload = useRef(null);
 
     useEffect(() => {
-        fetch(`${API_BASE}/options`)
-            .then((r) => r.json())
+        api(OPTIONS_PATH)
             .then((data) => {
                 setOptions(data);
                 setForm((f) => ({
@@ -85,7 +131,7 @@ export default function Predictor() {
                     education_level: data.education_levels?.[0] ?? "",
                 }));
             })
-            .catch(() => setError("Could not reach the SkillGreen API. Is it running on port 8000?"));
+            .catch((err) => setError(err.message));
     }, []);
 
     function updateField(key, value) {
@@ -96,23 +142,26 @@ export default function Predictor() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setExplain(null);
+        lastPayload.current = form;
+        const slow = setTimeout(() => setWaking(true), 4000);
         try {
-            const res = await fetch(`${API_BASE}/predict`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
-            });
-            if (!res.ok) {
-                const detail = await res.json().catch(() => null);
-                throw new Error(detail?.detail?.[0]?.msg || "Prediction failed. Check your inputs.");
-            }
-            const data = await res.json();
-            setResult(data);
+            setResult(await api(PREDICT_PATH, { method: "POST", body: form, token }));
         } catch (err) {
             setError(err.message);
             setResult(null);
         } finally {
+            clearTimeout(slow);
+            setWaking(false);
             setLoading(false);
+        }
+    }
+
+    async function loadExplain() {
+        try {
+            setExplain(await api(EXPLAIN_PATH, { method: "POST", body: lastPayload.current }));
+        } catch (err) {
+            setExplain({ error: err.message });
         }
     }
 
@@ -124,23 +173,7 @@ export default function Predictor() {
                 <div className="blob-3" />
             </div>
 
-            <header className="border-b border-black/[0.09]">
-                <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 py-3 sm:py-5 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                        <div className="h-7 w-7 sm:h-8 sm:w-8 bg-[var(--color-ink)] flex items-center justify-center rounded-sm shrink-0">
-                            <span className="font-serif text-[var(--color-parchment)] text-sm sm:text-base font-bold">S</span>
-                        </div>
-                        <div className="min-w-0">
-                            <h1 className="text-[13px] sm:text-base font-bold tracking-tight leading-none truncate">SkillGreen</h1>
-                            <p className="text-[9px] sm:text-xs text-ink/60 mt-0.5 sm:mt-1 tracking-widest uppercase font-medium truncate">ESG Readiness Index</p>
-                        </div>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-ink/60 border border-black/12 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full tracking-wider uppercase whitespace-nowrap">
-                        <span className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-[var(--color-environmental)] shrink-0" />
-                        Model v1.1
-                    </span>
-                </div>
-            </header>
+            <Header />
 
             <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 xl:px-12 pt-6 sm:pt-12 pb-5 sm:pb-10">
                 <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-ochre-dark)] mb-2 sm:mb-4">
@@ -164,8 +197,9 @@ export default function Predictor() {
                             <FormField label="Years of experience">
                                 <input
                                     type="number"
-                                    min="0"
-                                    max="50"
+                                    min={LIMITS.years.min}
+                                    max={LIMITS.years.max}
+                                    required
                                     value={form.years_experience}
                                     onChange={(e) => updateField("years_experience", Number(e.target.value))}
                                     className={inputClasses}
@@ -175,7 +209,9 @@ export default function Predictor() {
                             <FormField label="Relevant skills held">
                                 <input
                                     type="number"
-                                    min="0"
+                                    min={LIMITS.skills.min}
+                                    max={LIMITS.skills.max}
+                                    required
                                     value={form.relevant_skills_count}
                                     onChange={(e) => updateField("relevant_skills_count", Number(e.target.value))}
                                     className={inputClasses}
@@ -254,8 +290,11 @@ export default function Predictor() {
                             </span>
                         </button>
 
+                        {waking && (
+                            <p className="mt-3 text-xs sm:text-sm text-ink/60">The server is waking up. The first request can take up to 50 seconds.</p>
+                        )}
                         {error && (
-                            <p className="mt-3 sm:mt-4 text-xs sm:text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-3 py-2 sm:px-4 sm:py-3 break-words">
+                            <p role="alert" className="mt-3 sm:mt-4 text-xs sm:text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-3 py-2 sm:px-4 sm:py-3 break-words">
                                 {error}
                             </p>
                         )}
@@ -263,7 +302,7 @@ export default function Predictor() {
                 </section>
 
                 <section className="col-span-1 lg:col-span-5 xl:col-span-4 w-full">
-                    <div className="lg:sticky lg:top-8 bg-[var(--color-card)] rounded-xl border border-black/[0.09] shadow-sm p-4 sm:p-6 md:p-8 min-h-[280px] sm:min-h-[420px] flex flex-col w-full">
+                    <div className="lg:sticky lg:top-24 bg-[var(--color-card)] rounded-xl border border-black/[0.09] shadow-sm p-4 sm:p-6 md:p-8 min-h-[280px] sm:min-h-[420px] flex flex-col w-full" aria-live="polite">
                         {!result ? (
                             <div className="flex-1 flex flex-col items-center justify-center text-center py-8 lg:py-16">
                                 <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full border-2 border-dashed border-black/15 mb-3 sm:mb-5 flex items-center justify-center bg-black/[0.02]">
@@ -302,21 +341,22 @@ export default function Predictor() {
                                 </p>
                                 <div className="w-full">
                                     {Object.entries(result.pillar_breakdown).map(([key, value]) => (
-                                        <PillarBar
-                                            key={key}
-                                            label={PILLAR_META[key].label}
-                                            value={value}
-                                        />
+                                        <PillarBar key={key} pillarKey={key} value={value} />
                                     ))}
                                 </div>
 
-                                <div className="mt-4 sm:mt-auto pt-4 sm:pt-5 rounded-lg bg-[var(--color-parchment-dim)] border border-black/[0.08] px-3 sm:px-5 py-3 sm:py-5 text-xs sm:text-base leading-relaxed break-words w-full">
+                                <div className="mt-4 pt-4 sm:pt-5 rounded-lg bg-[var(--color-parchment-dim)] border border-black/[0.08] px-3 sm:px-5 py-3 sm:py-5 text-xs sm:text-base leading-relaxed break-words w-full">
                                     <span className="font-bold text-ink">Focus area — </span>
                                     <span className="text-ink/80 font-medium">
                                         {PILLAR_META[result.weakest_pillar]?.label ?? result.weakest_pillar} is your
                                         weakest pillar right now. That's the fastest lever to move up a category.
                                     </span>
                                 </div>
+
+                                <p className="mt-3 text-[11px] sm:text-xs text-ink/50">
+                                    {token ? "Saved to your dashboard." : "Log in before running an assessment to save it to your dashboard."}
+                                </p>
+                                <Explain explain={explain} onLoad={loadExplain} />
                             </>
                         )}
                     </div>
