@@ -71,7 +71,7 @@ export default function Landing() {
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <Link
                         to="/register"
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-[var(--color-primary)] text-white px-6 py-3 text-sm font-bold tracking-wide shadow-sm hover:bg-[var(--color-primary-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-[var(--color-primary)] !text-white px-6 py-3 text-sm font-bold tracking-wide shadow-sm hover:bg-[var(--color-primary-dark)] hover:shadow-md active:scale-[0.99] transition-all duration-200"
                     >
                         Sign up free <ArrowRight size={16} />
                     </Link>
@@ -139,7 +139,7 @@ export default function Landing() {
                 <p className="text-ink/60 text-xs sm:text-sm mb-6">Create a free account to get started.</p>
                 <Link
                     to="/register"
-                    className="inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] text-white px-6 py-3 text-sm font-bold tracking-wide shadow-sm hover:bg-[var(--color-primary-dark)] transition-all duration-200"
+                    className="inline-flex items-center gap-2 rounded-md bg-[var(--color-primary)] !text-white px-6 py-3 text-sm font-bold tracking-wide shadow-sm hover:bg-[var(--color-primary-dark)] transition-all duration-200"
                 >
                     Sign up free <ArrowRight size={16} />
                 </Link>

@@ -63,7 +63,7 @@ export default function Header() {
                             </Link>
                             <Link
                                 to="/register"
-                                className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-white bg-[var(--color-primary)] px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md hover:bg-[var(--color-primary-dark)] transition-colors"
+                                className="inline-flex items-center gap-1.5 text-[10px] sm:text-xs font-bold !text-white hover:!text-white bg-[var(--color-primary)] px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-md hover:bg-[var(--color-primary-dark)] transition-colors"
                             >
                                 <UserPlus size={14} strokeWidth={2.25} />
                                 Sign up
