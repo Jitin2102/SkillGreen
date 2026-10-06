@@ -20,6 +20,10 @@ class OtpVerify(BaseModel):
     code: str
 
 
+class GoogleAuthRequest(BaseModel):
+    credential: str
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"

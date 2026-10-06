@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
+from google.auth.transport import requests as google_requests  # type: ignore
+from google.oauth2 import id_token as google_id_token  # type: ignore
 from sqlalchemy.orm import Session
 
 from auth.security import (
@@ -11,9 +13,16 @@ from auth.security import (
     send_otp_email,
     verify_password,
 )
-from db.database import get_db
+from db.database import GOOGLE_CLIENT_ID, get_db
 from db.models import OtpCode, User
-from schema.auth import OtpRequest, OtpVerify, Token, UserCreate, UserLogin
+from schema.auth import (
+    GoogleAuthRequest,
+    OtpRequest,
+    OtpVerify,
+    Token,
+    UserCreate,
+    UserLogin,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -62,9 +71,6 @@ def request_otp(payload: OtpRequest, db: Session = Depends(get_db)):  # noqa: B0
     db.commit()
 
     send_otp_email(payload.email, code)
-
-    # Deliberately vague response: never confirms whether this email has
-    # an account, to avoid leaking which emails are registered.
     return {"message": "If that email is valid, a code has been sent."}
 
 
@@ -72,7 +78,7 @@ def request_otp(payload: OtpRequest, db: Session = Depends(get_db)):  # noqa: B0
 def verify_otp(payload: OtpVerify, db: Session = Depends(get_db)):  # noqa: B008
     otp = (
         db.query(OtpCode)
-        .filter(OtpCode.email == payload.email, OtpCode.used == False)  # noqa: E712
+        .filter(OtpCode.email == payload.email, OtpCode.used == False)
         .order_by(OtpCode.created_at.desc())
         .first()
     )
@@ -90,9 +96,40 @@ def verify_otp(payload: OtpVerify, db: Session = Depends(get_db)):  # noqa: B008
     user = db.query(User).filter(User.email == payload.email).first()
     if not user:
         # First successful OTP for this email — create the account.
-        # hashed_password stays NULL: this account has no password set
-        # unless the person sets one later through a separate flow.
         user = User(email=payload.email, hashed_password=None)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    token = create_access_token({"sub": user.email})
+    return Token(access_token=token)
+
+
+@router.post("/google", response_model=Token)
+def google_auth(payload: GoogleAuthRequest, db: Session = Depends(get_db)):  # noqa: B008
+    if not GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=500,
+            detail="Google sign-in is not configured on the server (missing GOOGLE_CLIENT_ID).",
+        )
+
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            payload.credential, google_requests.Request(), GOOGLE_CLIENT_ID
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid Google credential.")
+
+    email = idinfo.get("email")
+    email_verified = idinfo.get("email_verified", False)
+    if not email or not email_verified:
+        raise HTTPException(
+            status_code=401, detail="Google account email not verified."
+        )
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        user = User(email=email, hashed_password=None)
         db.add(user)
         db.commit()
         db.refresh(user)
