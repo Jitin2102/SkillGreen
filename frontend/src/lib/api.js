@@ -76,6 +76,13 @@ export function verifyOtp(email, code) {
     });
 }
 
+export function googleAuth(credential) {
+    return apiFetch("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential }),
+    });
+}
+
 // --- Profile ---
 export function getProfile() {
     return apiFetch("/profile");
@@ -113,8 +120,7 @@ export function getOptions() {
 }
 
 // --- Resume (Milestone 2) ---
-// Uses raw fetch, not apiFetch, since file upload needs multipart/form-data
-// rather than the JSON content-type apiFetch always sets.
+
 export async function uploadResume(file) {
     const token = getToken();
     const formData = new FormData();

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getToken, setToken, clearToken, loginUser, registerUser, requestOtp, verifyOtp } from "../lib/api";
+import { getToken, setToken, clearToken, loginUser, registerUser, requestOtp, verifyOtp, googleAuth } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -12,20 +12,9 @@ function decodeEmailFromToken(token) {
         return null;
     }
 }
-function isExpired(token) {
-    try {
-        const { exp } = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-        return exp ? exp * 1000 < Date.now() : false;
-    } catch {
-        return true;
-    }
-}
+
 export function AuthProvider({ children }) {
-    const [token, setTokenState] = useState(() => {
-    const t = getToken();
-    if (t && isExpired(t)) { clearToken(); return null; }
-    return t;
-});
+    const [token, setTokenState] = useState(getToken());
     const [email, setEmail] = useState(() => {
         const existing = getToken();
         return existing ? decodeEmailFromToken(existing) : null;
@@ -61,6 +50,12 @@ export function AuthProvider({ children }) {
         setTokenState(data.access_token);
     }
 
+    async function loginWithGoogle(credential) {
+        const data = await googleAuth(credential);
+        setToken(data.access_token);
+        setTokenState(data.access_token);
+    }
+
     function logout() {
         clearToken();
         setTokenState(null);
@@ -74,6 +69,7 @@ export function AuthProvider({ children }) {
         register,
         sendOtp,
         loginWithOtp,
+        loginWithGoogle,
         logout,
     };
 

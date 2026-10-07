@@ -4,9 +4,10 @@ import { Mail, Lock, Loader2, ArrowRight, KeyRound } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 import OtpLogin from "../components/OtpLogin";
+import GoogleSignInButton from "../components/GoogleSigninButton";
 
 const inputClasses =
-    "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base shadow-sm " +
+    "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm shadow-sm " +
     "transition-shadow focus:outline-none focus:ring-2 focus:ring-[var(--color-ochre)]/40 focus:border-[var(--color-ochre)]";
 
 function FormField({ label, children, icon: Icon }) {
@@ -28,7 +29,7 @@ export default function Register() {
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
     const [mode, setMode] = useState("password"); // "password" | "otp"
-    const { register } = useAuth();
+    const { register, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
 
     async function handleSubmit(e) {
@@ -52,6 +53,16 @@ export default function Register() {
             setError(err.message || "Registration failed. Try a different email.");
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleGoogleCredential(credential) {
+        setError(null);
+        try {
+            await loginWithGoogle(credential);
+            navigate("/dashboard");
+        } catch (err) {
+            setError(err.message || "Google sign-in failed.");
         }
     }
 
@@ -148,6 +159,18 @@ export default function Register() {
                     <KeyRound size={13} strokeWidth={2.25} />
                     {mode === "password" ? "Sign up with an emailed code instead" : "Sign up with a password instead"}
                 </button>
+
+                <div className="flex items-center gap-3 my-5">
+                    <div className="flex-1 h-px bg-black/10" />
+                    <span className="text-[10px] uppercase tracking-wider text-ink/40 font-semibold">or</span>
+                    <div className="flex-1 h-px bg-black/10" />
+                </div>
+
+                <GoogleSignInButton
+                    onCredential={handleGoogleCredential}
+                    onError={(msg) => setError(msg)}
+                    text="signup_with"
+                />
 
                 <p className="text-center text-xs sm:text-sm text-ink/60 mt-5">
                     Already have an account?{" "}
