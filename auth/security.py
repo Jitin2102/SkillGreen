@@ -4,10 +4,9 @@ import smtplib
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
+from config.settings import SECRET_KEY
 from jose import jwt  # type: ignore
 from passlib.context import CryptContext  # type: ignore
-
-from db.database import SECRET_KEY
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
