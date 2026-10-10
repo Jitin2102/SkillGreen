@@ -13,7 +13,6 @@ export function setToken(token) {
 export function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
 }
-
 export async function apiFetch(path, options = {}) {
     const token = getToken();
     const headers = {
@@ -33,7 +32,6 @@ export async function apiFetch(path, options = {}) {
     try {
         data = await res.json();
     } catch {
-        // some endpoints may return no body; that's fine
     }
 
     if (!res.ok) {
@@ -100,7 +98,6 @@ export function getAssessments() {
     return apiFetch("/assessments");
 }
 
-// --- Prediction (works with or without auth; apiFetch attaches token if present) ---
 export function predictReadiness(payload) {
     return apiFetch("/predict", {
         method: "POST",
@@ -118,8 +115,6 @@ export function explainPrediction(payload) {
 export function getOptions() {
     return apiFetch("/options");
 }
-
-// --- Resume (Milestone 2) ---
 
 export async function uploadResume(file) {
     const token = getToken();

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "77818594132-03rohvh2h6gpdj5crevf1t27uskg7m8r.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ;
 
 let scriptLoadPromise = null;
 
