@@ -13,8 +13,8 @@ optional_bearer_scheme = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
 ) -> User:
     token = credentials.credentials
 
@@ -43,8 +43,8 @@ def get_current_user(
 
 
 def get_current_user_optional(
-    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),
-    db: Session = Depends(get_db),
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
 ) -> User | None:
     if credentials is None:
         return None
