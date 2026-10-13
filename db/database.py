@@ -1,28 +1,21 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+import os
 
-from config.settings import DATABASE_URL
+from sqlalchemy import create_engine  # type: ignore
+from sqlalchemy.orm import declarative_base, sessionmaker  # type: ignore
 
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is not configured")
-
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:devpass@localhost:5432/skillgreen"
 )
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-secret-change-me")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-)
-
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
 def get_db():
     db = SessionLocal()
-
     try:
         yield db
     finally:
