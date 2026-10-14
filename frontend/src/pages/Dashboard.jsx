@@ -12,6 +12,7 @@ import {
 import Header from "../components/Header";
 import { getProfile, updateProfile, getAssessments, getOptions } from "../lib/api";
 import { PILLAR_META, CATEGORY_TONE } from "../lib/designConstants";
+import ResumePanel from "../components/ResumePanel";
 
 const inputClasses =
     "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm shadow-sm " +
@@ -37,14 +38,12 @@ function PillarBar({ pillarKey, value }) {
     );
 }
 
-/** Small interactive sparkline built with plain SVG — no charting library needed.
-    Hovering a point shows its category + date in a tooltip. */
 function HistorySparkline({ assessments }) {
     const [hoverIdx, setHoverIdx] = useState(null);
     if (assessments.length < 2) return null;
 
     const categoryValue = { Low: 1, Medium: 2, High: 3 };
-    const points = [...assessments].reverse(); // oldest first, left to right
+    const points = [...assessments].reverse();
     const width = 100;
     const height = 32;
     const stepX = width / (points.length - 1);
@@ -162,7 +161,7 @@ export default function Dashboard() {
     const tone = latest ? CATEGORY_TONE[latest.predicted_category] : null;
 
     return (
-        <div className="min-h-screen text-ink relative font-sans overflow-x-hidden">
+        <div className="min-h-dvh text-ink relative font-sans overflow-x-hidden">
             <div className="bg-aurora">
                 <div className="blob-3" />
             </div>
@@ -390,6 +389,11 @@ export default function Dashboard() {
                                     </div>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Resume upload, detected skills and skill gap */}
+                        <div className="lg:col-span-12">
+                            <ResumePanel />
                         </div>
                     </div>
                 )}

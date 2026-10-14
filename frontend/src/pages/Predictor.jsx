@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { PILLAR_META, CATEGORY_TONE } from "../lib/designConstants";
 import { api } from "../lib/http";
+import { useResumePrefill } from "../lib/useResumePrefill";
 import { useAuth } from "../context/AuthContext";
 import Header from "../components/Header";
 import { PREDICT_PATH, OPTIONS_PATH, EXPLAIN_PATH, PILLARS, LIMITS, THRESHOLDS, FACTOR_LABELS } from "../config";
@@ -15,7 +17,7 @@ import {
     Loader2,
 } from "lucide-react";
 
-// Each pillar is scaled to its own maximum (see PILLARS in src/config.js).
+const EXPOSURE_KEYS = ["environmental_project_exposure", "social_impact_exposure", "governance_exposure"];
 function PillarBar({ pillarKey, value }) {
     const meta = PILLAR_META[pillarKey] ?? PILLAR_META.environmental;
     const max = PILLARS.find((p) => p.key === pillarKey)?.max ?? 100;
@@ -37,7 +39,6 @@ function PillarBar({ pillarKey, value }) {
     );
 }
 
-// Breakdown from POST /predict/explain (explains the scoring formula, not the trained model).
 function Explain({ explain, onLoad }) {
     if (!explain) {
         return (
@@ -93,6 +94,12 @@ function FormField({ label, children, icon: Icon }) {
     );
 }
 
+const DetectedTag = () => (
+    <span className="ml-1.5 normal-case tracking-normal text-[10px] font-semibold text-[var(--color-primary)] bg-[var(--color-primary-light)] rounded-full px-1.5 py-0.5">
+        detected
+    </span>
+);
+
 const inputClasses =
     "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm md:text-base shadow-sm " +
     "transition-shadow focus:outline-none focus:ring-2 focus:ring-[var(--color-ochre)]/40 focus:border-[var(--color-ochre)]";
@@ -102,7 +109,12 @@ const checkboxRow =
     "hover:bg-black/[0.03] transition-colors cursor-pointer w-full";
 
 export default function Predictor() {
-    const { token } = useAuth(); // sent with /predict so signed-in users get the assessment saved
+    const { token } = useAuth();
+    const location = useLocation();
+    const cameFromResume = location.state?.resumeId != null;
+    const detected = useResumePrefill(token, location.state?.resumeId);
+    const [detectedKeys, setDetectedKeys] = useState([]);
+
     const [options, setOptions] = useState({ industries: [], education_levels: [] });
     const [form, setForm] = useState({
         years_experience: 5,
@@ -134,8 +146,26 @@ export default function Predictor() {
             .catch((err) => setError(err.message));
     }, []);
 
+    function applyDetected() {
+        if (!detected) return;
+        const keys = EXPOSURE_KEYS.filter((k) => detected[k]);
+        if (detected.relevant_skills_count != null) keys.push("relevant_skills_count");
+        setForm((f) => {
+            const next = { ...f };
+            for (const k of EXPOSURE_KEYS) if (detected[k]) next[k] = true;
+            if (detected.relevant_skills_count != null) next.relevant_skills_count = detected.relevant_skills_count;
+            return next;
+        });
+        setDetectedKeys(keys);
+    }
+
+    useEffect(() => {
+        if (detected && cameFromResume) applyDetected();
+    }, [detected]);
+
     function updateField(key, value) {
         setForm((f) => ({ ...f, [key]: value }));
+        setDetectedKeys((keys) => keys.filter((k) => k !== key));
     }
 
     async function handleSubmit(e) {
@@ -166,9 +196,10 @@ export default function Predictor() {
     }
 
     const tone = result ? CATEGORY_TONE[result.predicted_category] : null;
+    const applied = detectedKeys.length > 0;
 
     return (
-        <div className="min-h-screen text-ink relative font-sans overflow-x-hidden">
+        <div className="min-h-dvh text-ink relative font-sans overflow-x-hidden">
             <div className="bg-aurora">
                 <div className="blob-3" />
             </div>
@@ -193,6 +224,21 @@ export default function Predictor() {
 
                 <section className="col-span-1 lg:col-span-7 xl:col-span-8 bg-[var(--color-card)] rounded-xl border border-black/[0.09] shadow-sm p-4 sm:p-6 md:p-8 w-full">
                     <form onSubmit={handleSubmit} className="w-full">
+                        {detected && (
+                            <div className="mb-5 sm:mb-6 flex flex-wrap items-center justify-between gap-3 rounded-md bg-[var(--color-primary-light)] px-3.5 py-2.5 text-xs text-[var(--color-primary)]">
+                                <span className="font-medium leading-relaxed">
+                                    {applied
+                                        ? "Pre-filled from your resume. Please review before running."
+                                        : "Values detected from your resume are available. Please review them after applying."}
+                                </span>
+                                {!applied && (
+                                    <button type="button" onClick={applyDetected} className="font-bold underline">
+                                        Apply
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-1 sm:gap-y-2 w-full">
                             <FormField label="Years of experience">
                                 <input
@@ -206,7 +252,14 @@ export default function Predictor() {
                                 />
                             </FormField>
 
-                            <FormField label="Relevant skills held">
+                            <FormField
+                                label={
+                                    <>
+                                        Relevant skills held
+                                        {detectedKeys.includes("relevant_skills_count") && <DetectedTag />}
+                                    </>
+                                }
+                            >
                                 <input
                                     type="number"
                                     min={LIMITS.skills.min}
@@ -264,7 +317,10 @@ export default function Predictor() {
                                             className="h-4 w-4 md:h-5 md:w-5 shrink-0 rounded border-gray-300 text-[var(--color-ochre)] focus:ring-[var(--color-ochre)] mt-0.5 sm:mt-0"
                                         />
                                         <Icon size={16} className="text-ink/40 shrink-0 mt-0.5 sm:mt-0" strokeWidth={2} />
-                                        <span className="leading-tight">{label}</span>
+                                        <span className="leading-tight">
+                                            {label}
+                                            {detectedKeys.includes(key) && <DetectedTag />}
+                                        </span>
                                     </label>
                                 ))}
                             </div>

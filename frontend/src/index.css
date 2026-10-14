@@ -76,11 +76,16 @@ body,
 
 html {
   background: var(--color-parchment);
+
+  /* Stops iOS from inflating text when the phone is rotated */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh; /* mobile browsers: ignores the collapsing address bar */
 
   background: var(--color-parchment);
   color: var(--color-ink);
@@ -88,6 +93,13 @@ body {
   font-family: var(--font-body);
 
   overflow-x: hidden;
+}
+
+/* Media never forces a page wider than the screen */
+img,
+svg,
+video {
+  max-width: 100%;
 }
 
 /* =================================
@@ -690,5 +702,41 @@ select {
 
   .history-table td {
     font-size: 15px;
+  }
+}
+
+/* Phones: 16px minimum on form fields stops iOS Safari zooming the page on focus.
+   Lives here (unlayered) so it beats the smaller Tailwind text sizes on the inputs. */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Lighter background blobs: big blurs are costly on phones */
+  .bg-aurora::before,
+  .bg-aurora::after,
+  .bg-aurora .blob-3 {
+    filter: blur(60px);
+  }
+
+  .bg-aurora::before {
+    width: 20rem;
+    height: 20rem;
+  }
+
+  .bg-aurora::after {
+    width: 18rem;
+    height: 18rem;
+  }
+
+  .bg-aurora .blob-3 {
+    width: 16rem;
+    height: 16rem;
   }
 }
