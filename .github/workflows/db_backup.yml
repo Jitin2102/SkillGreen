@@ -18,7 +18,7 @@ jobs:
     env:
       PG_MAJOR: '16'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Dump and encrypt
         id: dump
