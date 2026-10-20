@@ -1,0 +1,1432 @@
+
+===== db\models.py =====
+
+from sqlalchemy import (  # type: ignore
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+)
+from sqlalchemy.sql import func  # type: ignore
+
+from .database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(
+        String, nullable=True
+    )  # nullable: Google-only accounts have no password
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    years_experience = Column(Integer, nullable=True)
+    current_industry = Column(String, nullable=True)
+    education_level = Column(String, nullable=True)
+    has_esg_certification = Column(Boolean, default=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class Assessment(Base):
+    __tablename__ = "assessments"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    predicted_category = Column(String, nullable=False)
+    confidence = Column(String, nullable=True)
+    pillar_breakdown = Column(JSON, nullable=True)
+    weakest_pillar = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class OtpCode(Base):
+    __tablename__ = "otp_codes"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, index=True, nullable=False)
+    code_hash = Column(String, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Resume(Base):
+    __tablename__ = "resumes"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    original_filename = Column(String, nullable=False)
+    storage_path = Column(String, nullable=False)
+    raw_text = Column(String, nullable=True)
+    extracted_skills = Column(JSON, nullable=True)
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+===== db\database.py =====
+
+import os
+
+from sqlalchemy import create_engine  # type: ignore
+from sqlalchemy.orm import declarative_base, sessionmaker  # type: ignore
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:devpass@localhost:5432/skillgreen"
+)
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-secret-change-me")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+===== auth\dependencies.py =====
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
+from auth.security import ALGORITHM
+from config.settings import SECRET_KEY
+from db.database import get_db
+from db.models import User
+
+bearer_scheme = HTTPBearer(scheme_name="BearerAuth")
+optional_bearer_scheme = HTTPBearer(auto_error=False, scheme_name="BearerAuth")
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+) -> User:
+    token = credentials.credentials
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str | None = payload.get("sub")
+
+        if email is None:
+            raise credentials_exception
+
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(User).filter(User.email == email).first()
+
+    if user is None:
+        raise credentials_exception
+
+    return user
+
+
+def get_current_user_optional(
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+) -> User | None:
+    if credentials is None:
+        return None
+
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+        )
+
+        email = payload.get("sub")
+
+        if email is None:
+            return None
+
+    except JWTError:
+        return None
+
+    return db.query(User).filter(User.email == email).first()
+
+===== config\skills_taxonomy.py =====
+
+# canonical skill -> list of surface forms/synonyms to match in resume text
+SKILL_TAXONOMY = {
+    "environmental impact assessment": [
+        "EIA",
+        "environmental impact assessment",
+        "environmental audit",
+    ],
+    "carbon accounting": [
+        "carbon accounting",
+        "GHG accounting",
+        "carbon footprint analysis",
+        "greenhouse gas accounting",
+    ],
+    "renewable energy": [
+        "renewable energy",
+        "solar energy",
+        "wind energy",
+        "clean energy",
+    ],
+    "diversity & inclusion": [
+        "diversity and inclusion",
+        "diversity & inclusion",
+        "D&I",
+        "DEI",
+    ],
+    "community engagement": [
+        "community engagement",
+        "stakeholder engagement",
+        "CSR",
+        "corporate social responsibility",
+    ],
+    "esg reporting": [
+        "ESG reporting",
+        "sustainability reporting",
+        "GRI standards",
+        "GRI reporting",
+    ],
+    "regulatory compliance": [
+        "regulatory compliance",
+        "compliance management",
+        "regulatory affairs",
+    ],
+    "corporate governance": [
+        "corporate governance",
+        "board governance",
+    ],
+    "risk management": [
+        "risk management",
+        "enterprise risk management",
+        "enterprise risk",
+    ],
+    "supply chain sustainability": [
+        "supply chain sustainability",
+        "sustainable supply chain",
+        "supply chain audit",
+    ],
+    "data analysis": [
+        "data analysis",
+        "data analytics",
+    ],
+    "project management": [
+        "project management",
+        "PMP",
+    ],
+}
+
+===== config\skill_requirements.py =====
+
+# what's typically expected for "High" ESG readiness, as a starting point —
+TARGET_SKILLS_BY_CATEGORY = {
+    "High": [
+        "esg reporting",
+        "carbon accounting",
+        "regulatory compliance",
+        "corporate governance",
+        "risk management",
+    ],
+    "Medium": [
+        "esg reporting",
+        "community engagement",
+        "regulatory compliance",
+    ],
+    "Low": [
+        "community engagement",
+    ],
+}
+
+===== resume\skill_gap.py =====
+
+from config.skill_requirements import TARGET_SKILLS_BY_CATEGORY
+
+
+def compute_skill_gap(user_skills: list[str], target_category: str) -> dict:
+    target = set(TARGET_SKILLS_BY_CATEGORY.get(target_category, []))
+    have = set(user_skills or [])
+
+    return {
+        "target_category": target_category,
+        "matched": sorted(have & target),
+        "missing": sorted(target - have),
+        "extra": sorted(have - target),
+    }
+
+
+def next_category_up(current_category: str) -> str:
+
+    order = ["Low", "Medium", "High"]
+    try:
+        idx = order.index(current_category)
+    except ValueError:
+        return current_category
+    return order[min(idx + 1, len(order) - 1)]
+
+===== routes\profile.py =====
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from auth.dependencies import get_current_user
+from db.database import get_db
+from db.models import Assessment, Profile, User
+from schema.profile import AssessmentResponse, ProfileResponse, ProfileUpdate
+
+router = APIRouter(tags=["profile"])
+
+
+@router.get("/profile", response_model=ProfileResponse)
+def get_profile(
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+    if not profile:
+        # no profile saved yet — return an empty/default one rather than a 404,
+        # since "no profile yet" is a normal state for a new user
+        return ProfileResponse()
+    return profile
+
+
+@router.post("/profile", response_model=ProfileResponse)
+def update_profile(
+    payload: ProfileUpdate,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+
+    if not profile:
+        profile = Profile(user_id=current_user.id)
+        db.add(profile)
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(profile, field, value)
+
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.get("/assessments", response_model=list[AssessmentResponse])
+def get_assessments(
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    return (
+        db.query(Assessment)
+        .filter(Assessment.user_id == current_user.id)
+        .order_by(Assessment.created_at.desc())
+        .all()
+    )
+
+===== routes\resume.py =====
+
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from sqlalchemy.orm import Session
+
+from auth.dependencies import get_current_user
+from db.database import get_db
+from db.models import Assessment, Resume, User
+from resume.infer_fields import infer_predict_fields_from_skills
+from resume.parser import extract_text
+from resume.skill_gap import compute_skill_gap, next_category_up
+from resume.skills import extract_skills
+
+router = APIRouter(prefix="/resume", tags=["resume"])
+
+UPLOAD_DIR = "uploads/resumes"
+ALLOWED_EXTENSIONS = {".pdf", ".docx"}
+MAX_FILE_SIZE_MB = 5
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@router.post("/upload")
+async def upload_resume(
+    file: UploadFile = File(...),  # noqa: B008
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400, detail="Only PDF and DOCX files are supported."
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE_MB * 1024 * 1024:
+        raise HTTPException(
+            status_code=400, detail=f"File too large (max {MAX_FILE_SIZE_MB}MB)."
+        )
+
+    stored_name = f"{current_user.id}_{uuid.uuid4().hex[:10]}{ext}"
+    storage_path = os.path.join(UPLOAD_DIR, stored_name)
+    with open(storage_path, "wb") as f:  # noqa: ASYNC230
+        f.write(contents)
+
+    resume = Resume(
+        user_id=current_user.id,
+        original_filename=file.filename,
+        storage_path=storage_path,
+    )
+    db.add(resume)
+    db.commit()
+    db.refresh(resume)
+
+    try:
+        resume.raw_text = extract_text(storage_path)
+        resume.extracted_skills = extract_skills(resume.raw_text)
+        db.commit()
+    except Exception:  # noqa: S110
+        # If parsing fails, we still want to keep the resume in the database
+        # and allow for retries later.
+        pass
+
+    return {
+        "id": resume.id,
+        "filename": resume.original_filename,
+        "status": "uploaded",
+        "parsed": resume.raw_text is not None,
+        "extracted_skills": resume.extracted_skills,
+    }
+
+
+@router.get("/list")
+def list_resumes(
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    resumes = (
+        db.query(Resume)
+        .filter(Resume.user_id == current_user.id)
+        .order_by(Resume.uploaded_at.desc())
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "filename": r.original_filename,
+            "uploaded_at": r.uploaded_at,
+            "has_extracted_skills": r.extracted_skills is not None,
+        }
+        for r in resumes
+    ]
+
+
+@router.get("/{resume_id}")
+def get_resume(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+
+    return {
+        "id": resume.id,
+        "filename": resume.original_filename,
+        "uploaded_at": resume.uploaded_at,
+        "raw_text": resume.raw_text,
+        "extracted_skills": resume.extracted_skills,
+    }
+
+
+@router.get("/{resume_id}/skill-gap")
+def get_skill_gap(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    if resume.extracted_skills is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This resume hasn't been parsed for skills yet.",
+        )
+
+    latest_assessment = (
+        db.query(Assessment)
+        .filter(Assessment.user_id == current_user.id)
+        .order_by(Assessment.created_at.desc())
+        .first()
+    )
+
+    if latest_assessment:
+        current_category = latest_assessment.predicted_category
+        target_category = next_category_up(current_category)
+    else:
+        current_category = None
+        target_category = "Medium"
+
+    gap = compute_skill_gap(resume.extracted_skills, target_category)
+    gap["current_category"] = current_category
+    return gap
+
+
+@router.get("/{resume_id}/inferred-fields")
+def get_inferred_fields(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    resume = (
+        db.query(Resume)
+        .filter(Resume.id == resume_id, Resume.user_id == current_user.id)
+        .first()
+    )
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    if resume.extracted_skills is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This resume hasn't been parsed for skills yet.",
+        )
+
+    return infer_predict_fields_from_skills(resume.extracted_skills)
+
+===== app.py =====
+
+import logging
+
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+
+from auth.dependencies import get_current_user, get_current_user_optional
+from auth.routes import router as auth_router
+from config.constants import VALID_EDUCATION_LEVELS, VALID_INDUSTRIES
+from db.database import get_db
+from db.models import Assessment, User
+from model.explain import explain_score
+from model.predict import MODEL_VERSION, model, predict_output
+from routes.profile import router as profile_router
+from routes.resume import router as resume_router
+from schema.response_model import PredictionResponse
+from schema.user_input import UserInput
+
+logger = logging.getLogger("skillgreen")
+logging.basicConfig(level=logging.INFO)
+
+app = FastAPI(
+    title="SkillGreen",
+    description="Predicts ESG (Environmental, Social, Governance) career readiness "
+    "from a professional's background.",
+    version="1.0.0",
+)
+app.include_router(auth_router)
+app.include_router(profile_router)
+app.include_router(resume_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        "https://skill-green.vercel.app",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to SkillGreen — ESG Readiness Prediction API"}
+
+
+@app.get("/health")
+def health_check():
+    status = "OK" if model else "Error"
+    return {
+        "status": status,
+        "message": "Model loaded" if model else "Model not available",
+        "version": MODEL_VERSION,
+    }
+
+
+@app.get("/options")
+def get_valid_options():
+    return {
+        "industries": VALID_INDUSTRIES,
+        "education_levels": VALID_EDUCATION_LEVELS,
+    }
+
+
+@app.get("/me")
+def read_me(current_user: User = Depends(get_current_user)):  # noqa: B008
+    return {"email": current_user.email, "id": current_user.id}
+
+
+@app.post("/predict", response_model=PredictionResponse)
+def predict_readiness(
+    data: UserInput,
+    current_user: User | None = Depends(get_current_user_optional),  # noqa: B008
+    db: Session = Depends(get_db),  # noqa: B008
+):
+    user_input = {
+        "years_experience": data.years_experience,
+        "relevant_skills_count": data.relevant_skills_count,
+        "environmental_score": data.environmental_score,
+        "social_score": data.social_score,
+        "governance_score": data.governance_score,
+        "esg_readiness_score": data.esg_readiness_score,
+        "current_industry": data.current_industry,
+        "education_level": data.education_level,
+        "has_esg_certification": data.has_esg_certification,
+        "environmental_project_exposure": data.environmental_project_exposure,
+        "social_impact_exposure": data.social_impact_exposure,
+        "governance_exposure": data.governance_exposure,
+    }
+
+    try:
+        prediction = predict_output(user_input)
+
+        pillar_breakdown = {
+            "environmental": data.environmental_score,
+            "social": data.social_score,
+            "governance": data.governance_score,
+        }
+        weakest_pillar = min(pillar_breakdown, key=pillar_breakdown.get)
+
+        if current_user is not None:
+            assessment = Assessment(
+                user_id=current_user.id,
+                predicted_category=prediction["category"],
+                confidence=prediction["confidence"],
+                pillar_breakdown=pillar_breakdown,
+                weakest_pillar=weakest_pillar,
+            )
+            db.add(assessment)
+            db.commit()
+
+        return JSONResponse(
+            status_code=200,
+            content={
+                "predicted_category": prediction["category"],
+                "confidence": prediction["confidence"],
+                "pillar_breakdown": pillar_breakdown,
+                "weakest_pillar": weakest_pillar,
+            },
+        )
+    except Exception:
+        logger.exception("Prediction failed for input: %s", user_input)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Prediction failed. Please try again or contact support."
+            },
+        )
+
+
+@app.post("/predict/explain")
+def explain_prediction(data: UserInput):
+    """Returns an exact contribution breakdown against the scoring FORMULA
+    (not the trained model's internals — see model/explain.py docstring).
+    Same input shape as /predict."""
+    user_input = {
+        "years_experience": data.years_experience,
+        "relevant_skills_count": data.relevant_skills_count,
+        "environmental_project_exposure": data.environmental_project_exposure,
+        "social_impact_exposure": data.social_impact_exposure,
+        "governance_exposure": data.governance_exposure,
+        "has_esg_certification": data.has_esg_certification,
+    }
+    return explain_score(user_input)
+
+===== frontend\src\App.jsx =====
+
+import { Routes, Route } from "react-router-dom";
+import Landing from "./pages/Landing";
+import Predictor from "./pages/Predictor";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+
+export default function App() {
+    return (
+        <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/predict" element={<Predictor />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+                path="/dashboard"
+                element={
+                    <ProtectedRoute>
+                        <Dashboard />
+                    </ProtectedRoute>
+                }
+            />
+        </Routes>
+    );
+}
+
+===== frontend\src\components\Header.jsx =====
+
+import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { LogOut, LayoutDashboard, LogIn, UserPlus, ClipboardList } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import logo from "../assets/skillgreen-logo.png";
+
+const pill = "inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3.5 py-2 rounded-full transition-colors";
+
+const navLinkClass = ({ isActive }) =>
+    `${pill} ${
+        isActive
+            ? "bg-[var(--color-primary)] !text-white"
+            : "text-ink/70 hover:text-ink hover:bg-black/[0.06]"
+    }`;
+
+const anchorClass =
+    "text-xs font-semibold text-ink/65 hover:text-ink px-3 py-2 rounded-full hover:bg-black/[0.06] transition-colors";
+
+export default function Header() {
+    const { isAuthenticated, email, logout } = useAuth();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 8);
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    const onLanding = pathname === "/";
+
+    const showSignUp = pathname !== "/" && pathname !== "/register";
+    const showLogIn = pathname !== "/login";
+
+    function handleLogout() {
+        logout();
+        navigate("/login");
+    }
+
+    return (
+        <header className="sticky top-0 z-50 px-2.5 sm:px-4 pt-2.5 sm:pt-3 pointer-events-none">
+            <div
+                className={`pointer-events-auto mx-auto max-w-[1180px] h-14 sm:h-16 flex items-center justify-between gap-2 rounded-full border backdrop-blur-xl pl-3.5 sm:pl-5 pr-2 sm:pr-2.5 transition-all duration-300 ${
+                    scrolled
+                        ? "bg-[var(--color-card)]/90 border-black/[0.10] shadow-[0_12px_32px_-12px_rgba(30,50,40,0.35)]"
+                        : "bg-[var(--color-card)]/65 border-black/[0.06] shadow-sm"
+                }`}
+            >
+                <Link to="/" className="flex items-center gap-3 min-w-0" aria-label="SkillGreen home">
+                    <img src={logo} alt="SkillGreen" className="h-8 sm:h-10 w-auto object-contain shrink-0" />
+                </Link>
+
+                {/* In-page links, only on the landing page */}
+                {onLanding && (
+                    <div className="hidden lg:flex items-center gap-1">
+                        <a href="#pillars" className={anchorClass}>Pillars</a>
+                        <a href="#features" className={anchorClass}>Features</a>
+                        <a href="#how-it-works" className={anchorClass}>How it works</a>
+                    </div>
+                )}
+
+                <nav className="flex items-center gap-0.5 sm:gap-1" aria-label="Main">
+                    <NavLink to="/predict" className={navLinkClass} aria-label="Assessment">
+                        <ClipboardList size={15} strokeWidth={2.25} />
+                        <span className="hidden sm:inline">Assessment</span>
+                    </NavLink>
+
+                    {isAuthenticated ? (
+                        <>
+                            <NavLink to="/dashboard" className={navLinkClass} aria-label="Dashboard">
+                                <LayoutDashboard size={15} strokeWidth={2.25} />
+                                <span className="hidden sm:inline">Dashboard</span>
+                            </NavLink>
+
+                            <span
+                                title={email}
+                                className="hidden sm:flex items-center gap-2 pl-2 pr-1 text-xs text-ink/60 max-w-[20ch]"
+                            >
+                                <span className="h-8 w-8 shrink-0 rounded-full bg-[var(--color-primary-light)] text-[var(--color-primary)] flex items-center justify-center text-xs font-bold">
+                                    {email?.[0]?.toUpperCase() ?? "?"}
+                                </span>
+                                <span className="hidden xl:block truncate">{email}</span>
+                            </span>
+
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                aria-label="Log out"
+                                className={`${pill} text-ink/70 hover:text-ink hover:bg-black/[0.06]`}
+                            >
+                                <LogOut size={15} strokeWidth={2.25} />
+                                <span className="hidden sm:inline">Log out</span>
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {showLogIn && (
+                                <NavLink to="/login" className={navLinkClass}>
+                                    <LogIn size={15} strokeWidth={2.25} className="hidden sm:block" />
+                                    Log in
+                                </NavLink>
+                            )}
+                            {showSignUp && (
+                                <Link
+                                    to="/register"
+                                    className="ml-0.5 inline-flex items-center gap-1.5 text-[11px] sm:text-xs font-bold !text-white hover:!text-white bg-[var(--color-primary)] px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full shadow-sm hover:bg-[var(--color-primary-dark)] transition-colors"
+                                >
+                                    <UserPlus size={15} strokeWidth={2.25} className="hidden sm:block" />
+                                    Sign up
+                                </Link>
+                            )}
+                        </>
+                    )}
+                </nav>
+            </div>
+        </header>
+    );
+}
+
+===== frontend\src\lib\api.js =====
+
+export const API_BASE = import.meta.env.VITE_API_BASE || "https://skillgreen.onrender.com";
+
+const TOKEN_KEY = "skillgreen_token";
+
+export function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token) {
+    localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+    localStorage.removeItem(TOKEN_KEY);
+}
+export async function apiFetch(path, options = {}) {
+    const token = getToken();
+    const headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+    };
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers,
+    });
+
+    let data = null;
+    try {
+        data = await res.json();
+    } catch {
+    }
+
+    if (!res.ok) {
+        const message =
+            (data && (data.detail || data.error)) || `Request failed (${res.status})`;
+        throw new Error(
+            typeof message === "string" ? message : JSON.stringify(message)
+        );
+    }
+
+    return data;
+}
+
+// --- Auth ---
+export function registerUser(email, password) {
+    return apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    });
+}
+
+export function loginUser(email, password) {
+    return apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+    });
+}
+
+export function requestOtp(email) {
+    return apiFetch("/auth/otp/request", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+    });
+}
+
+export function verifyOtp(email, code) {
+    return apiFetch("/auth/otp/verify", {
+        method: "POST",
+        body: JSON.stringify({ email, code }),
+    });
+}
+
+export function googleAuth(credential) {
+    return apiFetch("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential }),
+    });
+}
+
+// --- Profile ---
+export function getProfile() {
+    return apiFetch("/profile");
+}
+
+export function updateProfile(payload) {
+    return apiFetch("/profile", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+// --- Assessments ---
+export function getAssessments() {
+    return apiFetch("/assessments");
+}
+
+export function predictReadiness(payload) {
+    return apiFetch("/predict", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function explainPrediction(payload) {
+    return apiFetch("/predict/explain", {
+        method: "POST",
+        body: JSON.stringify(payload),
+    });
+}
+
+export function getOptions() {
+    return apiFetch("/options");
+}
+
+export async function uploadResume(file) {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const headers = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/resume/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        throw new Error((data && data.detail) || `Upload failed (${res.status})`);
+    }
+    return data;
+}
+
+export function listResumes() {
+    return apiFetch("/resume/list");
+}
+
+export function getResume(resumeId) {
+    return apiFetch(`/resume/${resumeId}`);
+}
+
+export function getSkillGap(resumeId) {
+    return apiFetch(`/resume/${resumeId}/skill-gap`);
+}
+
+export function getInferredFields(resumeId) {
+    return apiFetch(`/resume/${resumeId}/inferred-fields`);
+}
+
+===== frontend\src\lib\designConstants.js =====
+
+import { Leaf, Users, ScaleIcon } from "lucide-react";
+
+export const PILLAR_META = {
+    environmental: {
+        label: "Environmental",
+        bar: "bg-[var(--color-environmental)]",
+        dot: "bg-[var(--color-environmental)]",
+        icon: Leaf,
+        iconColor: "text-[var(--color-environmental)]",
+    },
+    social: {
+        label: "Social",
+        bar: "bg-[var(--color-social)]",
+        dot: "bg-[var(--color-social)]",
+        icon: Users,
+        iconColor: "text-[var(--color-social)]",
+    },
+    governance: {
+        label: "Governance",
+        bar: "bg-[var(--color-governance)]",
+        dot: "bg-[var(--color-governance)]",
+        icon: ScaleIcon,
+        iconColor: "text-[var(--color-governance)]",
+    },
+};
+
+export const CATEGORY_TONE = {
+    Low: {
+        text: "text-[var(--color-ochre-dark)]",
+        ring: "ring-[var(--color-ochre-dark)]/25",
+        bg: "bg-[var(--color-ochre-light)]",
+    },
+    Medium: {
+        text: "text-[var(--color-ochre)]",
+        ring: "ring-[var(--color-ochre)]/25",
+        bg: "bg-[var(--color-ochre-light)]",
+    },
+    High: {
+        text: "text-[var(--color-environmental)]",
+        ring: "ring-[var(--color-environmental)]/25",
+        bg: "bg-[var(--color-environmental-light)]",
+    },
+};
+
+===== frontend\src\pages\Dashboard.jsx =====
+
+import { useEffect, useState } from "react";
+import {
+    BadgeCheck,
+    Briefcase,
+    GraduationCap,
+    Loader2,
+    Save,
+    Clock,
+    TrendingUp,
+    Inbox,
+} from "lucide-react";
+import Header from "../components/Header";
+import { getProfile, updateProfile, getAssessments, getOptions } from "../lib/api";
+import { PILLAR_META, CATEGORY_TONE } from "../lib/designConstants";
+import ResumePanel from "../components/ResumePanel";
+
+const inputClasses =
+    "w-full rounded-md border border-black/12 bg-white px-2.5 sm:px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm shadow-sm " +
+    "transition-shadow focus:outline-none focus:ring-2 focus:ring-[var(--color-ochre)]/40 focus:border-[var(--color-ochre)]";
+
+function PillarBar({ pillarKey, value }) {
+    const meta = PILLAR_META[pillarKey] ?? PILLAR_META.environmental;
+    const pct = Math.min(100, Math.max(4, value * 3));
+    const Icon = meta.icon;
+    return (
+        <div className="mb-3 sm:mb-4 w-full">
+            <div className="flex justify-between items-baseline mb-1.5">
+                <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium text-ink">
+                    <Icon size={13} className={`shrink-0 ${meta.iconColor}`} strokeWidth={2.25} />
+                    {meta.label}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold tabular-nums text-ink/80">{value}</span>
+            </div>
+            <div className="h-1.5 w-full bg-black/[0.07] overflow-hidden rounded-full">
+                <div className={`h-full ${meta.bar} transition-all duration-700 ease-out`} style={{ width: `${pct}%` }} />
+            </div>
+        </div>
+    );
+}
+
+function HistorySparkline({ assessments }) {
+    const [hoverIdx, setHoverIdx] = useState(null);
+    if (assessments.length < 2) return null;
+
+    const categoryValue = { Low: 1, Medium: 2, High: 3 };
+    const points = [...assessments].reverse();
+    const width = 100;
+    const height = 32;
+    const stepX = width / (points.length - 1);
+
+    const coords = points.map((a, i) => ({
+        x: i * stepX,
+        y: height - ((categoryValue[a.predicted_category] || 1) - 1) * (height / 2),
+        a,
+    }));
+
+    const pathD = coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x} ${c.y}`).join(" ");
+
+    return (
+        <div className="relative">
+            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16" preserveAspectRatio="none">
+                <path d={pathD} fill="none" stroke="var(--color-ochre)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+                {coords.map((c, i) => (
+                    <circle
+                        key={i}
+                        cx={c.x}
+                        cy={c.y}
+                        r={hoverIdx === i ? 2.4 : 1.6}
+                        fill={hoverIdx === i ? "var(--color-ochre-dark)" : "var(--color-ochre)"}
+                        className="cursor-pointer transition-all"
+                        onMouseEnter={() => setHoverIdx(i)}
+                        onMouseLeave={() => setHoverIdx(null)}
+                        vectorEffect="non-scaling-stroke"
+                    />
+                ))}
+            </svg>
+            {hoverIdx !== null && (
+                <div className="text-center text-[11px] text-ink/70 mt-1">
+                    <span className="font-semibold">{coords[hoverIdx].a.predicted_category}</span>
+                    {" · "}
+                    {new Date(coords[hoverIdx].a.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default function Dashboard() {
+    const [profile, setProfile] = useState(null);
+    const [assessments, setAssessments] = useState([]);
+    const [options, setOptions] = useState({ industries: [], education_levels: [] });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const [form, setForm] = useState({
+        years_experience: "",
+        current_industry: "",
+        education_level: "",
+        has_esg_certification: false,
+    });
+    const [saving, setSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        async function load() {
+            setLoading(true);
+            setError(null);
+            try {
+                const [profileData, assessmentsData, optionsData] = await Promise.all([
+                    getProfile(),
+                    getAssessments(),
+                    getOptions(),
+                ]);
+                if (cancelled) return;
+                setProfile(profileData);
+                setAssessments(assessmentsData);
+                setOptions(optionsData);
+                setForm({
+                    years_experience: profileData.years_experience ?? "",
+                    current_industry: profileData.current_industry ?? "",
+                    education_level: profileData.education_level ?? "",
+                    has_esg_certification: !!profileData.has_esg_certification,
+                });
+            } catch (err) {
+                if (!cancelled) setError(err.message || "Could not load your dashboard.");
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        }
+        load();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    function updateField(key, value) {
+        setForm((f) => ({ ...f, [key]: value }));
+    }
+
+    async function handleSaveProfile(e) {
+        e.preventDefault();
+        setSaving(true);
+        setSaveMessage(null);
+        try {
+            const payload = {
+                ...form,
+                years_experience: form.years_experience === "" ? null : Number(form.years_experience),
+            };
+            const updated = await updateProfile(payload);
+            setProfile(updated);
+            setSaveMessage({ type: "success", text: "Profile saved." });
+        } catch (err) {
+            setSaveMessage({ type: "error", text: err.message || "Could not save profile." });
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    const latest = assessments.length > 0 ? assessments[0] : null;
+    const tone = latest ? CATEGORY_TONE[latest.predicted_category] : null;
+
+    return (
+        <div className="min-h-dvh text-ink relative font-sans overflow-x-hidden">
+            <div className="bg-aurora">
+                <div className="blob-3" />
+            </div>
+            <Header />
+
+            <div className="w-full max-w-[1200px] mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 sm:pb-16">
+                <p className="text-[9px] sm:text-xs font-bold uppercase tracking-widest text-[var(--color-ochre-dark)] mb-2 sm:mb-3">
+                    Your dashboard
+                </p>
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-tight mb-6 sm:mb-8">
+                    ESG readiness overview
+                </h2>
+
+                {loading && (
+                    <div className="flex items-center gap-2 text-ink/60 text-sm py-10">
+                        <Loader2 size={18} className="animate-spin" />
+                        Loading your dashboard…
+                    </div>
+                )}
+
+                {error && !loading && (
+                    <div className="text-sm font-medium text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)] rounded-md px-4 py-3 mb-6">
+                        {error}
+                    </div>
+                )}
+
+                {!loading && !error && (
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8">
+                        {/* Profile card */}
+                        <div className="lg:col-span-4">
+                            <div className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-6 shadow-sm h-full">
+                                <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-ink/70 mb-4">
+                                    Your profile
+                                </h3>
+                                <form onSubmit={handleSaveProfile}>
+                                    <label className="block mb-3.5 w-full">
+                                        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-ink/70">
+                                            <Briefcase size={12} strokeWidth={2.25} />
+                                            Years of experience
+                                        </span>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="50"
+                                            value={form.years_experience}
+                                            onChange={(e) => updateField("years_experience", e.target.value)}
+                                            className={inputClasses}
+                                        />
+                                    </label>
+
+                                    <label className="block mb-3.5 w-full">
+                                        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-ink/70">
+                                            <Briefcase size={12} strokeWidth={2.25} />
+                                            Industry
+                                        </span>
+                                        <select
+                                            value={form.current_industry}
+                                            onChange={(e) => updateField("current_industry", e.target.value)}
+                                            className={inputClasses}
+                                        >
+                                            <option value="">Select…</option>
+                                            {options.industries.map((i) => (
+                                                <option key={i} value={i}>{i}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <label className="block mb-3.5 w-full">
+                                        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-1.5 text-ink/70">
+                                            <GraduationCap size={12} strokeWidth={2.25} />
+                                            Education
+                                        </span>
+                                        <select
+                                            value={form.education_level}
+                                            onChange={(e) => updateField("education_level", e.target.value)}
+                                            className={inputClasses}
+                                        >
+                                            <option value="">Select…</option>
+                                            {options.education_levels.map((e) => (
+                                                <option key={e} value={e}>{e}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+
+                                    <label className="flex items-center gap-2.5 mb-4 text-xs cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.has_esg_certification}
+                                            onChange={(e) => updateField("has_esg_certification", e.target.checked)}
+                                        />
+                                        <span className="flex items-center gap-1.5 text-ink/80">
+                                            <BadgeCheck size={13} strokeWidth={2.25} />
+                                            ESG certified
+                                        </span>
+                                    </label>
+
+                                    {saveMessage && (
+                                        <div
+                                            className={`mb-3 text-xs font-medium rounded-md px-3 py-2 ${
+                                                saveMessage.type === "success"
+                                                    ? "text-[var(--color-environmental)] bg-[var(--color-environmental-light)]"
+                                                    : "text-[var(--color-ochre-dark)] bg-[var(--color-ochre-light)]"
+                                            }`}
+                                        >
+                                            {saveMessage.text}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        disabled={saving}
+                                        className="w-full rounded-md bg-[var(--color-ink)] text-[var(--color-parchment)] py-2.5 text-xs font-bold tracking-wide shadow-sm hover:bg-[var(--color-ochre-dark)] transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                        Save profile
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        {/* Latest assessment + trend */}
+                        <div className="lg:col-span-8 flex flex-col gap-5 sm:gap-8">
+                            <div className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-ink/70">
+                                        Latest readiness
+                                    </h3>
+                                    {latest && (
+                                        <span className="flex items-center gap-1.5 text-[10px] text-ink/50">
+                                            <Clock size={12} />
+                                            {new Date(latest.created_at).toLocaleDateString(undefined, {
+                                                year: "numeric", month: "short", day: "numeric",
+                                            })}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {!latest ? (
+                                    <div className="flex flex-col items-center text-center py-8 text-ink/50">
+                                        <Inbox size={28} className="mb-2 opacity-50" />
+                                        <p className="text-sm">No assessments yet.</p>
+                                        <p className="text-xs mt-1">
+                                            Run a readiness check from the{" "}
+                                            <a href="/predict" className="text-[var(--color-ochre-dark)] font-semibold hover:underline">
+                                                assessment page
+                                            </a>{" "}
+                                            while logged in to see it here.
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                        <div>
+                                            <span
+                                                className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full ${tone.bg} ${tone.text}`}
+                                            >
+                                                {latest.predicted_category} readiness
+                                            </span>
+                                            <p className="text-ink/60 text-xs mt-2.5">
+                                                Confidence: <span className="font-semibold tabular-nums">{Math.round(parseFloat(latest.confidence) * 100)}%</span>
+                                            </p>
+                                            <p className="text-ink/60 text-xs mt-1">
+                                                Weakest pillar:{" "}
+                                                <span className="font-semibold capitalize">{latest.weakest_pillar}</span>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {latest.pillar_breakdown &&
+                                                Object.entries(latest.pillar_breakdown).map(([key, value]) => (
+                                                    <PillarBar key={key} pillarKey={key} value={value} />
+                                                ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {assessments.length >= 2 && (
+                                <div className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-6 shadow-sm">
+                                    <h3 className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-ink/70 mb-4">
+                                        <TrendingUp size={13} strokeWidth={2.25} />
+                                        Trend over time
+                                    </h3>
+                                    <HistorySparkline assessments={assessments} />
+                                </div>
+                            )}
+
+                            {assessments.length > 0 && (
+                                <div className="bg-[var(--color-card)] border border-black/[0.08] rounded-lg px-4 sm:px-6 py-5 sm:py-6 shadow-sm">
+                                    <h3 className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-ink/70 mb-4">
+                                        Assessment history ({assessments.length})
+                                    </h3>
+                                    <div className="overflow-x-auto -mx-1 px-1">
+                                        <table className="w-full text-xs sm:text-sm">
+                                            <thead>
+                                                <tr className="text-left text-ink/50 text-[10px] uppercase tracking-wider">
+                                                    <th className="pb-2 pr-4 font-semibold">Date</th>
+                                                    <th className="pb-2 pr-4 font-semibold">Category</th>
+                                                    <th className="pb-2 pr-4 font-semibold">Confidence</th>
+                                                    <th className="pb-2 font-semibold">Weakest pillar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {assessments.map((a) => {
+                                                    const rowTone = CATEGORY_TONE[a.predicted_category];
+                                                    return (
+                                                        <tr key={a.id} className="border-t border-black/[0.06]">
+                                                            <td className="py-2.5 pr-4 text-ink/70 whitespace-nowrap">
+                                                                {new Date(a.created_at).toLocaleDateString(undefined, {
+                                                                    year: "numeric", month: "short", day: "numeric",
+                                                                })}
+                                                            </td>
+                                                            <td className="py-2.5 pr-4">
+                                                                <span className={`inline-flex text-[11px] font-bold px-2 py-0.5 rounded-full ${rowTone.bg} ${rowTone.text}`}>
+                                                                    {a.predicted_category}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2.5 pr-4 text-ink/70 tabular-nums">
+                                                                {Math.round(parseFloat(a.confidence) * 100)}%
+                                                            </td>
+                                                            <td className="py-2.5 text-ink/70 capitalize">{a.weakest_pillar}</td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Resume upload, detected skills and skill gap */}
+                        <div className="lg:col-span-12">
+                            <ResumePanel />
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
