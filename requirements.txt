@@ -14,7 +14,7 @@ anyio==4.15.1
     # via starlette
 bcrypt==3.2.2
     # via -r requirements.in
-certifi==2026.7.22
+certifi==2026.10.19
     # via requests
 cffi==2.1.1
     # via
@@ -76,8 +76,10 @@ pdfminer-six==20260107
     # via pdfplumber
 pdfplumber==0.11.10
     # via -r requirements.in
-pillow==12.3.0
-    # via pdfplumber
+pillow==13.0.0
+    # via
+    #   -r requirements.in
+    #   pdfplumber
 psycopg2-binary==2.9.13
     # via -r requirements.in
 pyasn1==0.6.4

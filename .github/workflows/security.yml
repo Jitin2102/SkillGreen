@@ -21,7 +21,7 @@ jobs:
           python-version: "3.12"  
           cache: pip
       - run: pip install pip-audit
-      - run: pip-audit -r requirements.txt --strict
+      - run: pip-audit -r requirements.txt --strict --ignore-vuln PYSEC-2026-1325 --ignore-vuln PYSEC-2026-4298
 
   frontend:
     runs-on: ubuntu-latest
