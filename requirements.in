@@ -20,7 +20,7 @@ python-dotenv==1.2.3
 
 # --- Authentication ---
 passlib==1.7.4
-bcrypt==3.2.2
+bcrypt==5.0.0
 python-jose==3.5.0
 cryptography==50.0.0
 # Google Sign-In: verifies Google ID tokens server-side
