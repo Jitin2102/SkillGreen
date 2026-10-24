@@ -14,6 +14,7 @@ anyio==4.15.1
     # via starlette
 bcrypt==3.2.2
     # via -r requirements.in
+certifi==2026.10.23
     # via requests
 cffi==2.1.1
     # via
@@ -36,7 +37,7 @@ ecdsa==0.19.2
     # via python-jose
 email-validator==2.3.0
     # via -r requirements.in
-fastapi==0.141.1
+fastapi==0.156.8
     # via -r requirements.in
 google-auth==2.61.0
     # via -r requirements.in
@@ -67,6 +68,8 @@ numpy==2.5.2
     #   pandas
     #   scikit-learn
     #   scipy
+opentelemetry-api==1.45.1
+    # via fastapi
 pandas==3.0.5
     # via -r requirements.in
 passlib==1.7.4
@@ -75,7 +78,7 @@ pdfminer-six==20260107
     # via pdfplumber
 pdfplumber==0.11.10
     # via -r requirements.in
-pillow>=13.0.0
+pillow==13.0.0
     # via pdfplumber
 psycopg2-binary==2.9.13
     # via -r requirements.in
@@ -130,17 +133,20 @@ threadpoolctl==3.7.0
     # via scikit-learn
 typing-extensions==4.16.0
     # via
-    #   annotated-types
+    #   alembic
+    #   anyio
+    #   fastapi
+    #   opentelemetry-api
     #   pydantic
+    #   pydantic-core
+    #   python-docx
+    #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.4
-    # via pandas
 urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
     # via -r requirements.in
-certifi>=2026.10.19

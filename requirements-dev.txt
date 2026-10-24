@@ -28,8 +28,6 @@ charset-normalizer==3.5.1
     #   requests
 click==8.5.0
     # via uvicorn
-colorama==0.4.6
-    # via pytest
 cryptography==50.0.0
     # via
     #   -r requirements.in
@@ -41,7 +39,7 @@ ecdsa==0.19.2
     # via python-jose
 email-validator==2.3.0
     # via -r requirements.in
-fastapi==0.141.1
+fastapi==0.156.8
     # via -r requirements.in
 google-auth==2.61.0
     # via -r requirements.in
@@ -81,6 +79,8 @@ numpy==2.5.2
     #   pandas
     #   scikit-learn
     #   scipy
+opentelemetry-api==1.45.1
+    # via fastapi
 packaging==26.3
     # via pytest
 pandas==3.0.5
@@ -159,6 +159,7 @@ typing-extensions==4.16.0
     #   alembic
     #   anyio
     #   fastapi
+    #   opentelemetry-api
     #   pydantic
     #   pydantic-core
     #   python-docx
@@ -168,8 +169,6 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.4
-    # via pandas
 urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
