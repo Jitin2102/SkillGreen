@@ -28,8 +28,6 @@ charset-normalizer==3.5.1
     #   requests
 click==8.5.0
     # via uvicorn
-colorama==0.4.6
-    # via pytest
 cryptography==50.0.0
     # via
     #   -r requirements.in
@@ -106,11 +104,11 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pydantic==2.13.4
+pydantic==2.14.1
     # via
     #   -r requirements.in
     #   fastapi
-pydantic-core==2.46.4
+pydantic-core==2.50.1
     # via pydantic
 pygments==2.21.0
     # via pytest
@@ -168,8 +166,6 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.4
-    # via pandas
 urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
