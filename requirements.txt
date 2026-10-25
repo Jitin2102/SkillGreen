@@ -12,14 +12,12 @@ annotated-types==0.8.0
     # via pydantic
 anyio==4.15.1
     # via starlette
-bcrypt==3.2.2
+bcrypt==5.0.0
     # via -r requirements.in
 certifi==2026.10.23
     # via requests
 cffi==2.1.1
-    # via
-    #   bcrypt
-    #   cryptography
+    # via cryptography
 charset-normalizer==3.5.1
     # via
     #   pdfminer-six

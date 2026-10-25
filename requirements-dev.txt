@@ -14,14 +14,12 @@ anyio==4.15.1
     # via
     #   httpx2
     #   starlette
-bcrypt==3.2.2
+bcrypt==5.0.0
     # via -r requirements.in
 certifi==2026.7.22
     # via requests
 cffi==2.1.1
-    # via
-    #   bcrypt
-    #   cryptography
+    # via cryptography
 charset-normalizer==3.5.1
     # via
     #   pdfminer-six
