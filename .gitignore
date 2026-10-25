@@ -24,3 +24,5 @@ model/model.pkl
 data/skillgreen.csv
 
 node_modules/
+
+backups/
