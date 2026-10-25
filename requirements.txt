@@ -75,9 +75,7 @@ pdfminer-six==20260107
     # via pdfplumber
 pdfplumber==0.11.10
     # via -r requirements.in
-pillow>=13.0.0
     # via pdfplumber
-psycopg2-binary==2.9.13
     # via -r requirements.in
 pyasn1==0.6.4
     # via
@@ -144,3 +142,5 @@ urllib3==2.8.0
 uvicorn==0.52.4
     # via -r requirements.in
 certifi>=2026.10.19
+pillow>=13.0.0
+psycopg2-binary>=2.9.11
