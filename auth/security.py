@@ -1,18 +1,18 @@
 import os
 import secrets
 import smtplib
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from email.message import EmailMessage
 
-from config.settings import SECRET_KEY
-from jose import jwt  # type: ignore
-from passlib.context import CryptContext  # type: ignore
+import bcrypt
+import jwt
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from config.settings import SECRET_KEY
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 OTP_EXPIRE_MINUTES = 10
+BCRYPT_MAX_BYTES = 72
 
 SMTP_HOST = os.getenv("SMTP_HOST", "")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -22,33 +22,35 @@ SMTP_FROM = os.getenv("SMTP_FROM", SMTP_USER)
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    raw = password.encode("utf-8")
+    if len(raw) > BCRYPT_MAX_BYTES:
+        raise ValueError("Password must be at most 72 bytes")
+    return bcrypt.hashpw(raw, bcrypt.gensalt()).decode("ascii")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
+    raw = plain_password.encode("utf-8")[:BCRYPT_MAX_BYTES]
+    try:
+        return bcrypt.checkpw(raw, hashed_password.encode("ascii"))
+    except ValueError:
+        return False
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode["exp"] = expire
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def generate_otp_code() -> str:
-    """Cryptographically random 6-digit code, as a zero-padded string."""
     return f"{secrets.randbelow(1_000_000):06d}"
 
 
 def otp_expiry() -> datetime:
-    return datetime.now(timezone.utc) + timedelta(minutes=OTP_EXPIRE_MINUTES)
+    return datetime.now(UTC) + timedelta(minutes=OTP_EXPIRE_MINUTES)
 
 
 def send_otp_email(to_email: str, code: str) -> None:
-    """Send the OTP by email. Falls back to printing to the console when
-    SMTP isn't configured, so local development works without setting up
-    a real mail account first."""
     if not SMTP_HOST or not SMTP_USER or not SMTP_PASSWORD:
         print(f"[DEV] OTP for {to_email}: {code} (expires in {OTP_EXPIRE_MINUTES} min)")
         return

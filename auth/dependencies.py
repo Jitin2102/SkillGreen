@@ -1,6 +1,6 @@
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from auth.security import ALGORITHM
@@ -31,7 +31,7 @@ def get_current_user(
         if email is None:
             raise credentials_exception
 
-    except JWTError:
+    except jwt.PyJWTError:
         raise credentials_exception
 
     user = db.query(User).filter(User.email == email).first()
@@ -61,7 +61,7 @@ def get_current_user_optional(
         if email is None:
             return None
 
-    except JWTError:
+    except jwt.PyJWTError:
         return None
 
     return db.query(User).filter(User.email == email).first()
