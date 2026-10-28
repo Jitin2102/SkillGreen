@@ -106,3 +106,19 @@ def test_protected_route_with_invalid_token():
         headers={"Authorization": "Bearer not-a-real-token"},
     )
     assert response.status_code == 401
+
+
+def test_register_rejects_password_over_72_bytes(test_email):
+    response = client.post(
+        "/auth/register",
+        json={"email": test_email, "password": "a" * 73},
+    )
+    assert response.status_code == 422
+
+
+def test_legacy_passlib_hash_still_verifies():
+    from auth.security import verify_password
+
+    legacy_hash = "$2b$12$JD6bZ6ZUZ7o2fR2vDEk58e04rbzpi1yjd57qQl3HC2YkLBH8ayLCa"
+    assert verify_password("testpass123", legacy_hash)
+    assert not verify_password("wrongpass", legacy_hash)
