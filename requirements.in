@@ -8,7 +8,7 @@ email-validator==2.3.0
 # --- ML / data ---
 scikit-learn==1.9.0
 pandas==3.0.5
-numpy==2.5.2
+numpy==2.5.4
 scipy==1.18.1
 joblib==1.5.3
 
