@@ -38,8 +38,6 @@ fastapi==0.141.1
     # via -r requirements.in
 google-auth==2.61.0
     # via -r requirements.in
-greenlet==3.5.6
-    # via sqlalchemy
 h11==0.16.0
     # via uvicorn
 idna==3.20
@@ -113,7 +111,7 @@ scipy==1.18.1
     #   scikit-learn
 six==1.17.0
     # via python-dateutil
-sqlalchemy==2.0.54
+sqlalchemy==2.1.6
     # via
     #   -r requirements.in
     #   alembic
@@ -135,8 +133,6 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.5
-    # via pandas
 urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
