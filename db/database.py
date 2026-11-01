@@ -6,6 +6,9 @@ from sqlalchemy.orm import declarative_base, sessionmaker  # type: ignore
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql://postgres:devpass@localhost:5432/skillgreen"
 )
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-insecure-secret-change-me")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
