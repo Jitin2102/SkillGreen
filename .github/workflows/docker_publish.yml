@@ -33,7 +33,7 @@ jobs:
 
       - name: Image tags
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ vars.DOCKERHUB_NAMESPACE || secrets.DOCKERHUB_USERNAME }}/${{ matrix.name }}
           tags: |
