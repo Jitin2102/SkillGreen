@@ -26,8 +26,8 @@ charset-normalizer==3.5.1
     #   requests
 click==8.5.0
     # via uvicorn
-colorama==0.4.6
-    # via pytest
+cloudpickle==3.1.2
+    # via joblib
 cryptography==50.0.2
     # via
     #   -r requirements.in
@@ -60,7 +60,7 @@ idna==3.20
     #   requests
 iniconfig==2.3.0
     # via pytest
-joblib==1.5.3
+joblib==1.6.0
     # via
     #   -r requirements.in
     #   scikit-learn
@@ -160,8 +160,6 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-tzdata==2026.5
-    # via pandas
 urllib3==2.8.0
     # via requests
 uvicorn==0.52.4
