@@ -16,7 +16,7 @@ joblib==1.5.3
 sqlalchemy==2.0.54
 psycopg2-binary==2.9.13
 alembic==1.20.0
-python-dotenv==1.2.3
+python-dotenv==1.2.4
 
 # --- Authentication ---
 bcrypt==5.0.0
