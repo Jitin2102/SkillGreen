@@ -34,8 +34,10 @@ cryptography==50.0.2
     #   google-auth
     #   pdfminer-six
     #   pyjwt
-dnspython==2.9.0
-    # via email-validator
+dnspython==2.9.2
+    # via
+    #   -r requirements.in
+    #   email-validator
 email-validator==2.3.0
     # via -r requirements.in
 fastapi==0.141.1
@@ -94,8 +96,10 @@ pluggy==1.6.0
     # via pytest
 psycopg2-binary==2.9.13
     # via -r requirements.in
-pyasn1==0.6.4
-    # via pyasn1-modules
+pyasn1==0.6.5
+    # via
+    #   -r requirements.in
+    #   pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
